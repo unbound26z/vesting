@@ -1,6 +1,8 @@
 use anchor_lang::prelude::*;
+use anchor_lang::solana_program::system_program; //dodaje se zbog constrainta za sys_prog::ID
 
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+//TODO: PROMENI PROGRAM ID treba 2GxXeKFC6jL6eMj2a1dCn9XFesYp6WrGXq7HDBZtgcPZ
+declare_id!("2GxXeKFC6jL6eMj2a1dCn9XFesYp6WrGXq7HDBZtgcPZ");
 
 #[program]
 pub mod vesting {

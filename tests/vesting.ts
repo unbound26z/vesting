@@ -10,7 +10,7 @@ describe("vesting", () => {
 
   const program = anchor.workspace.Vesting as Program<Vesting>;
 
-  it("make a vestment", async () => {
+  it("can make a vestment", async () => {
     // Before sending the transaction to the blockchain.
     const vestment = anchor.web3.Keypair.generate();
 
@@ -23,7 +23,7 @@ describe("vesting", () => {
       signers: [vestment],
     });
 
-    // Fetch the account details of the created tweet.
+    // Fetch the account details of the created vestment.
     const vestmentAccount = await program.account.vestment.fetch(vestment.publicKey);
 
     //insure it has the right data

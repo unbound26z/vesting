@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::system_program; //dodaje se zbog constrainta za sys_prog::ID
+//use anchor_spl::{associated_token::AssociatedToken, token::{CloseAccount, Mint, Token, TokenAccount, Transfer}};
 
 //TODO: PROMENI PROGRAM ID treba 2GxXeKFC6jL6eMj2a1dCn9XFesYp6WrGXq7HDBZtgcPZ
 //Drask ID: 2GxXeKFC6jL6eMj2a1dCn9XFesYp6WrGXq7HDBZtgcPZ Danilo ID: DYWdbcaqeXrWqvbTHeRVPZdEuUkm7YUDBErMkE7FajJS
@@ -12,9 +13,9 @@ pub mod vesting {
     pub fn make_vestment(ctx: Context<MakeVestment>,amount:u16,cliff:u16,period:u8) -> Result<()> {
         let vestment: &mut Account<Vestment> = &mut ctx.accounts.vestment;
         let vestor: &Signer = &ctx.accounts.vestor;
-        let clock: Clock = Clock::get().unwrap();
+        //let clock: Clock = Clock::get().unwrap(); vrv ne treba ustv
     
-        vestment.author = *vestor.key;
+        vestment.vestor = *vestor.key;
         vestment.timestamp = clock.unix_timestamp;
         vestment.amount = amount;
         vestment.cliff = cliff;
@@ -60,3 +61,4 @@ impl Vestment {
     const LEN: usize=DISCRIMINATOR_LENGTH+PUBLIC_KEY_LENGTH+TIMESTAMP_LENGTH+
     AMOUNT_LENGTH+CLIFF_LENGTH+PERIOD_LENGTH;
 }
+

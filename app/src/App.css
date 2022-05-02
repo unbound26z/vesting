@@ -53,8 +53,9 @@
 
 form{
     background-color: white;
-    padding: 0px 60px;
+    padding: 5px 60px;
     border-radius: 10px;
+    margin-top: 10px;
 }
 
 h1{

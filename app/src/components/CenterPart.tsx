@@ -5,7 +5,10 @@ import ClaimPart from './ClaimPart'
 
 function centerPart() {
   return (
-    <div>centerPart</div>
+    <div>
+    <VestPart/>
+    <ClaimPart/>
+    </div>
   )
 }
 

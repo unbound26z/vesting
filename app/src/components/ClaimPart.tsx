@@ -7,4 +7,4 @@ function ClaimPart() {
 }
 
 export default ClaimPart
-export {} //ZASTO MORA OVO???
+//export {} // iskakao error bez ovoga pa sam dodao i sad kao ipak ne mora ne kapiram

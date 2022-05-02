@@ -4,7 +4,7 @@ use anchor_lang::solana_program::system_program; //dodaje se zbog constrainta za
 
 //TODO: PROMENI PROGRAM ID treba 2GxXeKFC6jL6eMj2a1dCn9XFesYp6WrGXq7HDBZtgcPZ
 //Drask ID: 2GxXeKFC6jL6eMj2a1dCn9XFesYp6WrGXq7HDBZtgcPZ Danilo ID: DYWdbcaqeXrWqvbTHeRVPZdEuUkm7YUDBErMkE7FajJS
-declare_id!("DYWdbcaqeXrWqvbTHeRVPZdEuUkm7YUDBErMkE7FajJS");
+declare_id!("2GxXeKFC6jL6eMj2a1dCn9XFesYp6WrGXq7HDBZtgcPZ");
 
 #[program]
 pub mod vesting {
@@ -13,7 +13,7 @@ pub mod vesting {
     pub fn make_vestment(ctx: Context<MakeVestment>,amount:u16,cliff:u16,period:u8) -> Result<()> {
         let vestment: &mut Account<Vestment> = &mut ctx.accounts.vestment;
         let vestor: &Signer = &ctx.accounts.vestor;
-        //let clock: Clock = Clock::get().unwrap(); vrv ne treba ustv
+        let clock: Clock = Clock::get().unwrap();
     
         vestment.vestor = *vestor.key;
         vestment.timestamp = clock.unix_timestamp;
@@ -42,7 +42,7 @@ pub struct MakeVestment<'info> {
 
 #[account]
 pub struct Vestment {
-    pub author: Pubkey, // ciji vestment
+    pub vestor: Pubkey, // ciji vestment
     pub timestamp: i64, //pocetak cliffa npr.
     pub amount: u16, //vljd dovoljan uint8
     pub cliff: u16, //u danima?

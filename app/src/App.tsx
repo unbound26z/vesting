@@ -1,7 +1,6 @@
 import React from "react";
 import logo from "./logo.svg";
 import "./App.css";
-import CenterPart from "./components/CenterPart";
 import { useState } from "react";
 import FormInput from "./components/FormInput";
 

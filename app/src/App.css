@@ -44,13 +44,14 @@
   justify-content: center;
   height: 100vh;
   background: linear-gradient(
-      rgba(255, 255, 255, 0.7),
-      rgba(255, 255, 255, 0.3)
-    ),
-    url("https://images.pexels.com/photos/114979/pexels-photo-114979.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=500");
+    rgba(0,0,0,0.5),
+    rgba(0,0,0,0.4)
+  ),
+    url("https://wallpapercave.com/wp/wp3385209.jpg");
   background-size: cover;
   background-position: center;
 }
+
 
 form{
     background-color: white;
@@ -60,7 +61,7 @@ form{
 }
 
 h1{
-    color: rgb(77, 1, 77);
+    color: rgba(0,0,0,0.9);
     text-align: center;
 }
 
@@ -69,12 +70,24 @@ button{
     height: 50px;
     padding: 10px;
     border: none;
-    background-color: rebeccapurple;
-    color: white;
+    background-color: #FFBF46;
+    color: rgba(0,0,0,0.9);
     border-radius: 5px;
     font-weight: bold;
     font-size: 18px;
     cursor: pointer;
     margin-top: 15px;
     margin-bottom: 30px;
+}
+
+.claim{
+  margin-top: 45px;
+  width: 147.02px;
+
+}
+
+
+.connectWallet{
+  margin-bottom: 15px;
+
 }

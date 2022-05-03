@@ -4,6 +4,7 @@ import "./App.css";
 import { useState } from "react";
 import FormInput from "./components/FormInput";
 import ConnectWallet from "./components/ConnectWallet";
+import { Claim } from "./components/Claim";
 
 const App = () => {
   const [values, setValues] = useState({
@@ -68,6 +69,7 @@ const App = () => {
         ))}
         <button>Vest</button>
       </form>
+      <Claim/>
     </div>
   );
 };

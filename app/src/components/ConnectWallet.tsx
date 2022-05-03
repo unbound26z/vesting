@@ -3,12 +3,12 @@ import React from 'react';
 import "./formInput.css";
 
 
-function ConnectWallet() {
+const ConnectWallet = () => {
   return (
     <div className="connectWallet">
-    <button>ConnectWallet</button>
+    <button>Connect wallet</button>
     </div>
   )
 }
 
-export default ConnectWallet
+export default ConnectWallet;

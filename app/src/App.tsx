@@ -3,6 +3,7 @@ import logo from "./logo.svg";
 import "./App.css";
 import { useState } from "react";
 import FormInput from "./components/FormInput";
+import ConnectWallet from "./components/ConnectWallet";
 
 const App = () => {
   const [values, setValues] = useState({
@@ -54,6 +55,7 @@ const App = () => {
 
   return (
     <div className="app">
+      <ConnectWallet/>
       <form onSubmit={handleSubmit}>
         <h1>Vesting</h1>
         {inputs.map((input) => (

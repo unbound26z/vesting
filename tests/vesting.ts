@@ -28,7 +28,7 @@ describe("vesting", () => {
 
     //insure it has the right data
     assert.equal(
-      vestmentAccount.author.toBase58(),
+      vestmentAccount.vestor.toBase58(),
       program.provider.wallet.publicKey.toBase58()
     );
     assert.equal(vestmentAccount.amount, 100);

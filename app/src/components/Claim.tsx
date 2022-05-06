@@ -6,7 +6,7 @@ import "./formInput.css";
 export const Claim = () => {
   return (
     <div className="claim">
-    <button>Claim tokens</button>
+    <button className=" wallet-adapter-button wallet-adapter-button-trigger claimButton">Claim tokens</button>
     </div>
   )
 }

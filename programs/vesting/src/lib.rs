@@ -1,8 +1,7 @@
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program::system_program; //dodaje se zbog constrainta za sys_prog::ID
+use anchor_lang::solana_program::system_program; //add bcs of constraint for sys_prog::ID
 //use anchor_spl::{associated_token::AssociatedToken, token::{CloseAccount, Mint, Token, TokenAccount, Transfer}};
 
-//TODO: PROMENI PROGRAM ID treba 2GxXeKFC6jL6eMj2a1dCn9XFesYp6WrGXq7HDBZtgcPZ
 //Drask ID: 2GxXeKFC6jL6eMj2a1dCn9XFesYp6WrGXq7HDBZtgcPZ Danilo ID: DYWdbcaqeXrWqvbTHeRVPZdEuUkm7YUDBErMkE7FajJS
 declare_id!("2GxXeKFC6jL6eMj2a1dCn9XFesYp6WrGXq7HDBZtgcPZ");
 
@@ -23,31 +22,50 @@ pub mod vesting {
        
         Ok(())
     }
+
+
+    // //TODO  
+    // pub fn claim_vestment(ctx: Context<ClaimVestment>) -> Result<()> {
+
+
+    //     Ok(())
+    // }
 }
 
 #[derive(Accounts)]
 pub struct MakeVestment<'info> {
-    #[account(init,payer=vestor,space=Vestment::LEN)] //inituje acc prave velicine
-    pub vestment: Account<'info,Vestment>, //parsuje iz bitova u Vestment struct
+    #[account(init,payer=vestor,space=Vestment::LEN)] //inits acc of the right size
+    pub vestment: Account<'info,Vestment>, //parses from bits to vestment struct
 
-    #[account(mut)] //mut da bi smanjili kolko para ima
-    pub vestor: Signer<'info>, //=AccountInfo al mora i da potpise
+    #[account(mut)] //mut to make the amount he has LESS
+    pub vestor: Signer<'info>, //=AccountInfo but has to sign it too
 
     ///CHECK
-    #[account(address=system_program::ID)] //da bude valid
-    pub system_program: AccountInfo<'info>//accountInfo daje account u bitovima
+    #[account(address=system_program::ID)] //so its valid
+    pub system_program: AccountInfo<'info>//accountInfo gives an accounts in BITS
 
 }
+
+// //TODO  
+// #[derive(Accounts)]
+// pub struct ClaimVestment<'info> {
+//     #[account(mut)] //mut to make the amount he has HIGHER
+//     pub vestor: Signer<'info>, //=AccountInfo  has to sign it too
+
+//      ///CHECK
+//      #[account(address=system_program::ID)] //so its valid
+//      pub system_program: AccountInfo<'info>//accountInfo returns account in bits
+// }
 
 
 #[account]
 pub struct Vestment {
-    pub vestor: Pubkey, // ciji vestment
-    pub timestamp: i64, //pocetak cliffa npr.
-    pub amount: u16, //vljd dovoljan uint8
-    pub cliff: u16, //u danima?
-    pub period: u8, //na kolko se otkljucava
-    //pub procent: u8 //koliko posto investmenta se unlockuje po periodu (ne pise u notion)
+    pub vestor: Pubkey, // whose vestment
+    pub timestamp: i64, //beginning of the cliff fi.
+    pub amount: u16, //enough?
+    pub cliff: u16, //in days?
+    pub period: u8, //when it unlocks the percent
+    //pub procent: u8 //maybe
 }
 
 const DISCRIMINATOR_LENGTH: usize = 8;

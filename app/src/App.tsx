@@ -63,6 +63,7 @@ const Content: FC = () => {
     amount: "",
     cliff: "",
     period: "",
+    beneficiary: ""
   });
 
   const inputs = [
@@ -90,12 +91,22 @@ const Content: FC = () => {
       id: 3,
       name: "period",
       type: "text",
-      placeholder: "Period between payments",
+      placeholder: "Period between payments (# of days)",
       errorMessage: "Must be a valid number!",
       label: "Period",
       pattern: `^[0-9]{1,20}$`,
       required: true,
     },
+    {
+      id: 4,
+      name: "beneficiary",
+      type: "text",
+      placeholder: "PubKey that will recieve the tokens",
+      errorMessage: "Must be a valid address!",
+      label: "Beneficiary",
+      pattern: `^[A-Z0-9]{32,44}$`,
+      required: true
+    }
   ];
 
   const handleSubmit = (e) => {

@@ -104,7 +104,7 @@ const Content: FC = () => {
       placeholder: "PubKey that will recieve the tokens",
       errorMessage: "Must be a valid address!",
       label: "Beneficiary",
-      pattern: `^[A-Z0-9]{32,44}$`,
+      pattern: `^[A-Za-z0-9]{32,44}$`,
       required: true
     }
   ];

@@ -3,6 +3,7 @@ import { Program } from "@project-serum/anchor";
 import { Vesting } from "../target/types/vesting";
 import * as assert from "assert";
 import * as bs58 from "bs58";
+import { TOKEN_PROGRAM_ID } from "@project-serum/anchor/dist/cjs/utils/token";
 
 describe("vesting", () => {
   // Configure the client to use the local cluster.
@@ -13,6 +14,7 @@ describe("vesting", () => {
   it("can make a vestment", async () => {
     // Before sending the transaction to the blockchain.
     const vestment = anchor.web3.Keypair.generate();
+    const beneficiary = anchor.web3.Keypair.generate();
 
     await program.rpc.makeVestment(100, 12, 1,{
       accounts: {

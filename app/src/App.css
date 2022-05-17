@@ -92,10 +92,17 @@ h1{
 
 
 .vestButton {
-  margin-left: 12vh;
+  position: relative;
   margin-top: 2vh;
   margin-bottom: 2vh;
   font-weight: bold;
+}
+
+.vestbut {
+  display: flex;
+  width: auto;
+  align-items: center;
+  justify-content: center;
 }
 
 .claimButton{

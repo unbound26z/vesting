@@ -147,9 +147,11 @@ const Content: FC = () => {
             onChange={onChange}
           />
         ))}
+        <div className="vestbut">
         <button className="wallet-adapter-button wallet-adapter-button-trigger vestButton">
           Vest
         </button>
+        </div>
       </form>
       <Claim />
     </div>

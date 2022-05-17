@@ -9,7 +9,7 @@ declare_id!("2GxXeKFC6jL6eMj2a1dCn9XFesYp6WrGXq7HDBZtgcPZ");
 pub mod vesting {
     use super::*;
 
-    pub fn make_vestment(ctx: Context<MakeVestment>,amount:u16,cliff:u16,period:u8) -> Result<()> {
+    pub fn make_vestment(ctx: Context<MakeVestment>,amount:u16,cliff:u16,period:u8,beneficiary:Pubkey) -> Result<()> {
         let vestment: &mut Account<Vestment> = &mut ctx.accounts.vestment;
         let vestor: &Signer = &ctx.accounts.vestor;
         let clock: Clock = Clock::get().unwrap();
@@ -19,8 +19,13 @@ pub mod vesting {
         vestment.amount = amount;
         vestment.cliff = cliff;
         vestment.period = period;
-       
+        vestment.beneficiary=beneficiary.key(); // is this ok?
+        vestment.bump =*ctx.bumps.get("vestment").unwrap(); // for the bump ??
 
+        // vesting::cpi::set_data(
+        //     ctx.accounts.set_data_ctx().with_signer(&[&[bump][..]]),
+        //     data,
+        // );  //sta je ovo i jel treba 
 
         Ok(())
     }
@@ -35,9 +40,9 @@ pub mod vesting {
 }
 
 #[derive(Accounts)]
-// #[instruction(escrow_bump: u8)]
+//#[instruction(vest_bump: u8)]
 pub struct MakeVestment<'info> {
-    #[account(init,payer=vestor,space=Vestment::LEN)] //inits acc of the right size
+    #[account(init,payer=vestor,space=Vestment::LEN,seeds=[b"vestment",vestor.key().as_ref()],bump)] //inits acc of the right size
     pub vestment: Account<'info,Vestment>, //parses from bits to vestment struct
 
     #[account(mut)] //mut to make the amount he has LESS
@@ -69,19 +74,23 @@ pub struct MakeVestment<'info> {
 
 }
 
-// //TODO  
-// #[derive(Accounts)]
-// pub struct ClaimVestment<'info> {
-//     #[account(mut)] //mut to make the amount he has HIGHER
-//     pub vestor: Signer<'info>, //=AccountInfo  has to sign it too
 
-//     #[account(mut)] //mut to make the amount he has HIGHER
-//     pub target: AccountInfo<'info>, //=AccountInfo  has to sign it too
+//TODO  
+#[derive(Accounts)]
+pub struct ClaimVestment<'info> {
+    #[account(mut, seeds = [b"vestment", vestor.key().as_ref()], bump = vestment.bump)]
+    pub vestment: Account<'info,Vestment>,
+   
+    #[account(mut)] //mut to make the amount he has HIGHER
+    pub vestor: Signer<'info>, //=AccountInfo  has to sign it too
 
-//      ///CHECK
-//      #[account(address=system_program::ID)] //so its valid
-//      pub system_program: AccountInfo<'info>//accountInfo returns account in bits
-// }
+    #[account(mut)] //mut to make the amount he has HIGHER
+    pub target: AccountInfo<'info>, //=AccountInfo  has to sign it too
+
+    ///CHECK
+    #[account(address=system_program::ID)] //so its valid
+    pub system_program: AccountInfo<'info>//accountInfo returns account in bits
+}
 
 
 #[account]
@@ -91,7 +100,9 @@ pub struct Vestment {
     pub amount: u16, //amount?
     pub cliff: u16, //in days? //drugi timestamp umesto ovoga
     pub period: u8, //when it unlocks the percent
-    pub beneficiary: Pubkey // who gets the money
+    pub beneficiary: Pubkey, // who gets the money
+    bump: u8 // za pda
+
 
 }
 
@@ -104,6 +115,6 @@ const PERIOD_LENGTH: usize= 1;
 
 impl Vestment {
     const LEN: usize=DISCRIMINATOR_LENGTH+PUBLIC_KEY_LENGTH+TIMESTAMP_LENGTH+
-    AMOUNT_LENGTH+CLIFF_LENGTH+PERIOD_LENGTH+PUBLIC_KEY_LENGTH;
+    AMOUNT_LENGTH+CLIFF_LENGTH+PERIOD_LENGTH+PUBLIC_KEY_LENGTH+PERIOD_LENGTH;
 }
 

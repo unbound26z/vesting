@@ -20,12 +20,17 @@ import {
   PhantomWalletAdapter,
   SolflareWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
-import { clusterApiUrl, Connection } from "@solana/web3.js";
+import { clusterApiUrl, Connection, PublicKey } from "@solana/web3.js";
 import { Program, AnchorProvider, web3, BN } from "@project-serum/anchor";
 import ConnectWallet from "./components/ConnectWallet";
 import idl from "./idl.json";
 
 require("@solana/wallet-adapter-react-ui/styles.css");
+
+//VARIABLES######################################
+const programID = new PublicKey(idl.metadata.address);
+
+//APP############################################
 
 const App: FC = () => {
   return (
@@ -36,6 +41,8 @@ const App: FC = () => {
 };
 
 export default App;
+
+//CONTEXT########################################
 
 const Context: FC<{ children: ReactNode }> = ({ children }) => {
   //set to 'devnet', 'testnet', or 'mainnet-beta'.
@@ -58,12 +65,15 @@ const Context: FC<{ children: ReactNode }> = ({ children }) => {
   );
 };
 
+//CONTENT########################################
+
 const Content: FC = () => {
   const [values, setValues] = useState({
     amount: "",
     cliff: "",
     period: "",
-    beneficiary: ""
+    beneficiary: "",
+    num_of_periods: ""
   });
 
   const inputs = [
@@ -99,14 +109,24 @@ const Content: FC = () => {
     },
     {
       id: 4,
+      name: "num_of_periods",
+      type: "text",
+      placeholder: "Number of periods in total.",
+      errorMessage: "Must be a valid number!",
+      label: "Period count",
+      pattern: `^[0-9]{1,3}$`,
+      required: true,
+    },
+    {
+      id: 5,
       name: "beneficiary",
       type: "text",
-      placeholder: "PubKey that will recieve the tokens",
+      placeholder: "Pubkey that will recieve the tokens",
       errorMessage: "Must be a valid address!",
       label: "Beneficiary",
       pattern: `^[A-Za-z0-9]{32,44}$`,
-      required: true
-    }
+      required: true,
+    },
   ];
 
   const handleSubmit = (e) => {
@@ -118,6 +138,11 @@ const Content: FC = () => {
   };
 
   const wallet = useAnchorWallet();
+
+  // const [voteAccount, setVoteAccount] = useState({
+  //   account: null,
+  //   accountBump: null,
+  // });
 
   function getProvider() {
     if (!wallet) {
@@ -134,6 +159,44 @@ const Content: FC = () => {
     return provider;
   }
 
+  async function makeVestment() {
+    const provider = getProvider();
+    const vestment = web3.Keypair.generate(); //is this needed cuz its a pda
+    if (!provider) {
+      throw "Provider is null.";
+    }
+
+    //fixing some type of idl bug this way
+    const a = JSON.stringify(idl);
+    const b = JSON.parse(a);
+    const program = new Program(b, idl.metadata.address, provider);
+
+    const [vestmentPDA, vestmentBump] = await PublicKey.findProgramAddress(
+      [Buffer.from("vestment")],
+      programID
+    );
+
+    let amount = values.amount;
+    let cliff = values.cliff;
+    let period = values.period;
+    let num_of_periods=values.num_of_periods;
+    let beneficiary = values.beneficiary;
+
+    try {
+      await program.rpc.makeVestment(amount,cliff,period,beneficiary,num_of_periods,{
+        accounts: {
+          vestment: vestmentPDA,
+          vestor: provider.wallet.publicKey,
+          systemProgram: web3.SystemProgram.programId,
+        }
+      });
+    } catch (err) {
+      console.log("Transaction error: " + err);
+    }
+  }
+
+  function claimVestment() {}
+
   return (
     <div className="app">
       <WalletMultiButton />
@@ -148,12 +211,22 @@ const Content: FC = () => {
           />
         ))}
         <div className="vestbut">
-        <button className="wallet-adapter-button wallet-adapter-button-trigger vestButton">
-          Vest
-        </button>
+          <button
+            onClick={makeVestment}
+            className="wallet-adapter-button wallet-adapter-button-trigger vestButton"
+          >
+            Vest
+          </button>
         </div>
       </form>
-      <Claim />
+      <div className="claim">
+        <button
+          onClick={claimVestment}
+          className=" wallet-adapter-button wallet-adapter-button-trigger claimButton"
+        >
+          Claim tokens
+        </button>
+      </div>
     </div>
   );
 };

@@ -24,6 +24,8 @@ import { clusterApiUrl, Connection, PublicKey } from "@solana/web3.js";
 import { Program, AnchorProvider, web3, BN } from "@project-serum/anchor";
 import ConnectWallet from "./components/ConnectWallet";
 import idl from "./idl.json";
+import {} from "@solana/spl-token";
+
 
 require("@solana/wallet-adapter-react-ui/styles.css");
 
@@ -181,6 +183,7 @@ const Content: FC = () => {
     let period = values.period;
     let num_of_periods=values.num_of_periods;
     let beneficiary = values.beneficiary;
+    let mint = new PublicKey("3f4Fy3fgn52kzu5rfcRK9Je9vk1MaGu2j48LBq1h4F9a");
 
     try {
       await program.rpc.makeVestment(amount,cliff,period,beneficiary,num_of_periods,{
@@ -195,7 +198,11 @@ const Content: FC = () => {
     }
   }
 
-  function claimVestment() {}
+  async function claimVestment() {
+    
+
+
+  }
 
   return (
     <div className="app">

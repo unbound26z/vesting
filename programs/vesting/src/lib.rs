@@ -45,23 +45,34 @@ pub mod vesting {
         let clock: Clock = Clock::get().unwrap();
         let amount_per_payment: u16 = vestment.amount/ (vestment.num_of_periods as u16 + 1 as u16);
 
-        
-         //calculate if and how much to claim
-        if vestment.timestamp + ((vestment.period*24*60*60 * vestment.claim_counter) as i64 ) < clock.unix_timestamp {
-            //TODO
-            //isplata
-            system_instruction::transfer(&vestment.vestor,&ctx.accounts.target.key,amount_per_payment as u64);
+        if (vestment.claim_counter <= vestment.num_of_periods) { // check if claim counter is ok
+             
+            //calculate if and how much to claim
 
-            vestment.claim_counter+=1; //if claimed will increment counter so that next time will move up a period in seconds
+            if vestment.timestamp + ((vestment.period*24*60*60 * vestment.claim_counter) as i64 ) < clock.unix_timestamp {
+                //TODO
+                //isplata
+                system_instruction::transfer(&vestment.vestor,&ctx.accounts.target.key,amount_per_payment as u64);
+    
+                vestment.claim_counter+=1; //if claimed will increment counter so that next time will move up a period in seconds
+    
+    
+            } else {
+                //obavesti da nije prosao period
+            }
 
 
         } else {
-            //obavesti da nije prosao period
+            //delete vestment??
         }
+        
+        
+       
 
         Ok(())
     }
 }
+
 
 #[derive(Accounts)]
 //#[instruction(bump: u8)]    //needed?
@@ -72,23 +83,23 @@ pub mod vesting {
     #[account(mut)] //mut to make the amount he has LESS
     pub vestor: Signer<'info>, //=AccountInfo but has to sign it too
 
-    // #[account(mut, constraint = token_account.mint ==  kind_of_token.key())]
-    // pub token_account: Account<'info, TokenAccount>,
+    #[account(mut, constraint = token_account.mint == kind_of_token.key())]
+    pub token_account: Account<'info, TokenAccount>,
 
-    // #[account(
-    //     init,
-    //     payer = vestor,
-    //     seeds = [vestment.key().as_ref()],
-    //     bump = escrow_bump,
-    //     token::mint = kind_of_token,
-    //     token::authority = escrowed_tokens_of_vestor,
-    // )]
+    #[account(
+        init,
+        payer = vestor,
+        seeds = [b"token_account",vestor.key().as_ref()],
+        bump,
+        token::mint = kind_of_token,
+        token::authority = tokens_in_vestment,
+    )]
 
-    // pub escrowed_tokens_of_vestor: Account<'info, TokenAccount>,
-    // pub kind_of_token: Account<'info, Mint>,
+    pub tokens_in_vestment: Account<'info, TokenAccount>,
+    pub kind_of_token: Account<'info, Mint>, // mint
 
-    // pub token_program: Program<'info, Token>,
-    // pub rent: Sysvar<'info, Rent>,
+    pub token_program: Program<'info, Token>,
+    pub rent: Sysvar<'info, Rent>,
 
     ///CHECK: Validated here.
     #[account(address=system_program::ID)] //so its valid

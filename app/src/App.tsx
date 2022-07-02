@@ -11,8 +11,10 @@ import {
   ConnectionProvider,
   WalletProvider,
   useAnchorWallet,
+  WalletContext,
 } from "@solana/wallet-adapter-react";
 import {
+  WalletModal,
   WalletModalProvider,
   WalletMultiButton,
 } from "@solana/wallet-adapter-react-ui";
@@ -21,10 +23,10 @@ import {
   SolflareWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
 import { clusterApiUrl, Connection, PublicKey } from "@solana/web3.js";
-import { Program, AnchorProvider, web3, BN } from "@project-serum/anchor";
+import { Program, AnchorProvider, web3, BN, Wallet } from "@project-serum/anchor";
 import ConnectWallet from "./components/ConnectWallet";
 import idl from "./idl.json";
-import {} from "@solana/spl-token";
+import { createAssociatedTokenAccount } from "@solana/spl-token";
 
 
 require("@solana/wallet-adapter-react-ui/styles.css");
@@ -141,11 +143,6 @@ const Content: FC = () => {
 
   const wallet = useAnchorWallet();
 
-  // const [voteAccount, setVoteAccount] = useState({
-  //   account: null,
-  //   accountBump: null,
-  // });
-
   function getProvider() {
     if (!wallet) {
       return null;
@@ -163,7 +160,7 @@ const Content: FC = () => {
 
   async function makeVestment() {
     const provider = getProvider();
-    const vestment = web3.Keypair.generate(); //is this needed cuz its a pda
+    //const vestment = web3.Keypair.generate(); //is this needed cuz its a pda
     if (!provider) {
       throw "Provider is null.";
     }
@@ -183,7 +180,10 @@ const Content: FC = () => {
     let period = values.period;
     let num_of_periods=values.num_of_periods;
     let beneficiary = values.beneficiary;
-    let mint = new PublicKey("3f4Fy3fgn52kzu5rfcRK9Je9vk1MaGu2j48LBq1h4F9a");
+    let mint = new web3.PublicKey("3f4Fy3fgn52kzu5rfcRK9Je9vk1MaGu2j48LBq1h4F9a"); //??
+
+
+    //let tokenAccount = createAssociatedTokenAccount(provider.connection,,mint,vestmentPDA);
 
     try {
       await program.rpc.makeVestment(amount,cliff,period,beneficiary,num_of_periods,{
@@ -191,6 +191,7 @@ const Content: FC = () => {
           vestment: vestmentPDA,
           vestor: provider.wallet.publicKey,
           systemProgram: web3.SystemProgram.programId,
+        //  token_account:
         }
       });
     } catch (err) {

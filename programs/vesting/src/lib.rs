@@ -24,13 +24,13 @@ pub mod vesting {
         let clock: Clock = Clock::get().unwrap();
 
         vestment.vestor = *vestor.key;
-        vestment.timestamp = clock.unix_timestamp + ((cliff * 24 * 60 * 60) as i64); //endtime calculation
+        //vestment.timestamp = clock.unix_timestamp + ((cliff * 24 * 60 * 60) as i64); //endtime calculation
+        vestment.timestamp = clock.unix_timestamp; //trenutak pravljenja vestmenta
         vestment.amount = amount;
         vestment.period = period;
         vestment.num_of_periods = num_of_periods;
         vestment.beneficiary = ctx.accounts.beneficiary.key(); // is this ok?
         vestment.bump = *ctx.bumps.get("vestment").unwrap(); // for the bump ??
-        vestment.claim_counter = 0;
 
         token::transfer(
             CpiContext::new(
@@ -53,13 +53,13 @@ pub mod vesting {
     }
 
     //TODO
-    pub fn claim_vestment(ctx: Context<ClaimVestment>) -> Result<()> {
+    pub fn claim_vestment(ctx: Context<ClaimVestment>, amount_per_period: u64) -> Result<()> {
         //TODO: HOW TO CONNECT THE CLAIM VESTMENT BUTTON TO THE CREATED VESTMENT PDA ACCOUNT
         //WHEN USING PUBKEY AS SEED
 
         let vestment: &mut Account<Vestment> = &mut ctx.accounts.vestment;
-        //let clock: Clock = Clock::get().unwrap();
-        //let amount_per_payment: u16 = vestment.amount/ (vestment.num_of_periods as u16 + 1 as u16);
+        // let clock: Clock = Clock::get().unwrap();
+        // let amount_per_payment: u16 = vestment.amount/ (vestment.num_of_periods as u16 + 1 as u16);
 
         // if (vestment.claim_counter <= vestment.num_of_periods) {
         //     // check if claim counter is ok
@@ -72,11 +72,6 @@ pub mod vesting {
         //     {
         //         //TODO
         //         //isplata
-        //         system_instruction::transfer(
-        //             &vestment.vestor,
-        //             &ctx.accounts.target.key,
-        //             amount_per_payment as u64,
-        //         );
 
         //         vestment.claim_counter += 1; //if claimed will increment counter so that next time will move up a period in seconds
         //     } else {
@@ -100,7 +95,7 @@ pub mod vesting {
                     &[*ctx.bumps.get("vested_tokens").unwrap()],
                 ]],
             ),
-            ctx.accounts.vested_tokens.amount,
+            amount_per_period,
         )?;
 
         Ok(())
@@ -181,7 +176,6 @@ pub struct Vestment {
     pub beneficiary: Pubkey, // who gets the money
     pub bump: u8,            // za pda
     pub num_of_periods: u8,
-    pub claim_counter: u8,
 }
 
 const DISCRIMINATOR_LENGTH: usize = 8;
@@ -197,7 +191,6 @@ impl Vestment {
         + AMOUNT_LENGTH
         + PERIOD_LENGTH
         + PUBLIC_KEY_LENGTH
-        + PERIOD_LENGTH
         + PERIOD_LENGTH
         + PERIOD_LENGTH;
 }

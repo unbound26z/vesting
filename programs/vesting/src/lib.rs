@@ -1,36 +1,45 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::system_program; //add bcs of constraint for sys_prog::ID
-use anchor_spl::token::{Mint, Token, TokenAccount};
+use anchor_spl::token::{self, Mint, Token, TokenAccount};
+use std::mem::size_of;
 
-//Drask ID: 2GxXeKFC6jL6eMj2a1dCn9XFesYp6WrGXq7HDBZtgcPZ Danilo ID: DYWdbcaqeXrWqvbTHeRVPZdEuUkm7YUDBErMkE7FajJS
 declare_id!("2GxXeKFC6jL6eMj2a1dCn9XFesYp6WrGXq7HDBZtgcPZ");
 
 #[program]
 pub mod vesting {
-    use anchor_lang::solana_program::system_instruction;
-    use anchor_spl::token::{self, Transfer};
-
     use super::*;
-
     pub fn make_vestment(
         ctx: Context<MakeVestment>,
         amount: u64,
-        cliff: u16,
-        period: u8,
-        num_of_periods: u8,
+        cliff: Option<i64>,
+        period: i64,
+        num_of_periods: u32,
     ) -> Result<()> {
         let vestment: &mut Account<Vestment> = &mut ctx.accounts.vestment;
         let vestor: &Signer = &ctx.accounts.vestor;
-        let clock: Clock = Clock::get().unwrap();
+        let vesting_start_at = Clock::get().unwrap().unix_timestamp;
 
-        vestment.vestor = *vestor.key;
-        //vestment.timestamp = clock.unix_timestamp + ((cliff * 24 * 60 * 60) as i64); //endtime calculation
-        vestment.timestamp = clock.unix_timestamp; //trenutak pravljenja vestmenta
-        vestment.amount = amount;
-        vestment.period = period;
+        vestment.vestor = vestor.key();
+        vestment.vesting_start_at = vesting_start_at;
+        vestment.amount_vested = amount;
+        vestment.amount_claimed = 0;
+        vestment.period_length = period;
         vestment.num_of_periods = num_of_periods;
         vestment.beneficiary = ctx.accounts.beneficiary.key(); // is this ok?
-        vestment.bump = *ctx.bumps.get("vestment").unwrap(); // for the bump ??
+        vestment.last_claim_period = None;
+        vestment.amount_per_period = vestment.amount_vested.checked_div(vestment.num_of_periods as u64).unwrap();
+
+        if let Some(c) = cliff {
+            vestment.cliff_end_at = Some(c);
+            vestment.vesting_end_at = c
+                .checked_add((num_of_periods as i64).checked_mul(period).unwrap())
+                .unwrap();
+        } else {
+            vestment.cliff_end_at = None;
+            vestment.vesting_end_at = vesting_start_at
+                .checked_add((num_of_periods as i64).checked_mul(period).unwrap())
+                .unwrap();
+        }
 
         token::transfer(
             CpiContext::new(
@@ -44,42 +53,33 @@ pub mod vesting {
             amount as u64,
         )?;
 
-        // vesting::cpi::set_data(
-        //     ctx.accounts.set_data_ctx().with_signer(&[&[bump][..]]),
-        //     data,
-        // );  //sta je ovo i jel treba
-
         Ok(())
     }
 
-    //TODO
-    pub fn claim_vestment(ctx: Context<ClaimVestment>, amount_per_period: u64) -> Result<()> {
-        //TODO: HOW TO CONNECT THE CLAIM VESTMENT BUTTON TO THE CREATED VESTMENT PDA ACCOUNT
-        //WHEN USING PUBKEY AS SEED
+    pub fn claim_vestment(ctx: Context<ClaimVestment>) -> Result<()> {
+        let vestment = &mut ctx.accounts.vestment;
+        let claim_time = Clock::get().unwrap().unix_timestamp;
+        let mut amount_to_claim: Box<u64> = Box::new(0);
+        if vestment.vesting_end_at >= claim_time {
+       
+        let mut num_of_claim_periods = Box::new(0);
+        if let Some(last_claim_period) = vestment.last_claim_period {
+            *num_of_claim_periods = claim_time.checked_sub(last_claim_period).unwrap().checked_div(vestment.period_length).unwrap();
+            vestment.last_claim_period = num_of_claim_periods.checked_mul(vestment.period_length).unwrap().checked_add(last_claim_period);
+        } else {
+            if let Some(c) = vestment.cliff_end_at {
+                *num_of_claim_periods = claim_time.checked_sub(c).unwrap().checked_div(vestment.period_length).unwrap();
+                vestment.last_claim_period = num_of_claim_periods.checked_mul(vestment.period_length).unwrap().checked_add(c);
 
-        let vestment: &mut Account<Vestment> = &mut ctx.accounts.vestment;
-        // let clock: Clock = Clock::get().unwrap();
-        // let amount_per_payment: u16 = vestment.amount/ (vestment.num_of_periods as u16 + 1 as u16);
-
-        // if (vestment.claim_counter <= vestment.num_of_periods) {
-        //     // check if claim counter is ok
-
-        //     //calculate if and how much to claim
-
-        //     if vestment.timestamp
-        //         + ((vestment.period * 24 * 60 * 60 * vestment.claim_counter) as i64)
-        //         < clock.unix_timestamp
-        //     {
-        //         //TODO
-        //         //isplata
-
-        //         vestment.claim_counter += 1; //if claimed will increment counter so that next time will move up a period in seconds
-        //     } else {
-        //         //obavesti da nije prosao period
-        //     }
-        // } else {
-        //     //delete vestment??
-        // }
+            } else {
+                *num_of_claim_periods = (claim_time.checked_sub(vestment.vesting_start_at).unwrap()).checked_div(vestment.period_length).unwrap();
+                vestment.last_claim_period = num_of_claim_periods.checked_mul(vestment.period_length).unwrap().checked_add(vestment.vesting_start_at);
+            }
+        }
+        *amount_to_claim = (*num_of_claim_periods as u64).checked_mul(vestment.amount_per_period).unwrap();
+    } else  {
+        *amount_to_claim = vestment.amount_vested.checked_sub(vestment.amount_claimed).unwrap();
+    }
 
         token::transfer(
             CpiContext::new_with_signer(
@@ -95,9 +95,11 @@ pub mod vesting {
                     &[*ctx.bumps.get("vested_tokens").unwrap()],
                 ]],
             ),
-            amount_per_period,
+            *amount_to_claim,
         )?;
 
+        vestment.amount_claimed = vestment.amount_claimed.checked_add(*amount_to_claim).unwrap();
+       
         Ok(())
     }
 }
@@ -105,7 +107,13 @@ pub mod vesting {
 #[derive(Accounts)]
 //#[instruction(bump: u8)]    //needed?
 pub struct MakeVestment<'info> {
-    #[account(init,payer=vestor,space=Vestment::LEN,seeds=[b"vestment",vested_tokens.key().as_ref()],bump)]
+    #[account(
+        init,
+        payer = vestor,
+        space = 8 + size_of::<Vestment>(),
+        seeds = [b"vestment",vested_tokens.key().as_ref()],
+        bump
+    )]
     //inits acc of the right size
     pub vestment: Account<'info, Vestment>, //parses from bits to vestment struct
 
@@ -142,7 +150,11 @@ pub struct MakeVestment<'info> {
 //TODO
 #[derive(Accounts)]
 pub struct ClaimVestment<'info> {
-    #[account(mut, seeds = [b"vestment", vested_tokens.key().as_ref()], bump = vestment.bump)]
+    #[account(
+        mut, 
+        seeds = [b"vestment", vested_tokens.key().as_ref()], 
+        bump
+    )]
     pub vestment: Account<'info, Vestment>,
 
     #[account(mut)] //mut to make the amount he has HIGHER
@@ -169,28 +181,34 @@ pub struct ClaimVestment<'info> {
 #[account]
 #[derive(Default)] //needed?
 pub struct Vestment {
-    pub vestor: Pubkey,      // whose vestment
-    pub timestamp: i64,      //endtime
-    pub amount: u64,         //amount?
-    pub period: u8,          //when it unlocks the percent
-    pub beneficiary: Pubkey, // who gets the money
-    pub bump: u8,            // za pda
-    pub num_of_periods: u8,
+    pub vestor: Pubkey,        // whose vestment
+    pub vesting_start_at: i64, //start time
+    pub amount_vested: u64,
+    pub amount_claimed: u64,
+    pub period_length: i64, //when it unlocks the percent
+    pub num_of_periods: u32,
+    pub beneficiary: Pubkey,       // who gets the money
+    pub cliff_end_at: Option<i64>, //
+    pub last_claim_period: Option<i64>,
+    pub vesting_end_at: i64,
+    pub amount_per_period: u64,
 }
 
-const DISCRIMINATOR_LENGTH: usize = 8;
-const PUBLIC_KEY_LENGTH: usize = 32;
-const TIMESTAMP_LENGTH: usize = 8;
-const AMOUNT_LENGTH: usize = 8;
-const PERIOD_LENGTH: usize = 1;
+// const DISCRIMINATOR_LENGTH: usize = 8;
+// const PUBLIC_KEY_LENGTH: usize = 32;
+// const TIMESTAMP_LENGTH: usize = 8;
+// const AMOUNT_LENGTH: usize = 8;
+// const PERIOD_LENGTH: usize = 1;
 
-impl Vestment {
-    const LEN: usize = DISCRIMINATOR_LENGTH
-        + PUBLIC_KEY_LENGTH
-        + TIMESTAMP_LENGTH
-        + AMOUNT_LENGTH
-        + PERIOD_LENGTH
-        + PUBLIC_KEY_LENGTH
-        + PERIOD_LENGTH
-        + PERIOD_LENGTH;
-}
+// impl Vestment {
+//     const LEN: usize = DISCRIMINATOR_LENGTH
+//         + PUBLIC_KEY_LENGTH
+//         + TIMESTAMP_LENGTH
+//         + TIMESTAMP_LENGTH //ZA OPTION<I64> ??????
+//         + AMOUNT_LENGTH
+//         + AMOUNT_LENGTH
+//         + PERIOD_LENGTH
+//         + PUBLIC_KEY_LENGTH
+//         + PERIOD_LENGTH
+//         + AMOUNT_LENGTH+2;
+// }

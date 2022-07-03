@@ -10,6 +10,7 @@ import {
   Transaction,
   SYSVAR_RENT_PUBKEY,
   sendAndConfirmTransaction,
+  SYSVAR_EPOCH_SCHEDULE_PUBKEY,
 } from "@solana/web3.js";
 import {
   createMint,
@@ -83,24 +84,38 @@ describe("vesting", () => {
       program.programId
     );
 
-    await program.rpc.makeVestment(new anchor.BN(100), 15, 15, 4, {
-      accounts: {
-        vestment: vestment,
-        vestor: vestor.publicKey,
-        vestorTokenAccount: vestorTokenAccount,
-        beneficiary: beneficiary.publicKey,
-        vestedTokens: vestedTokens,
-        vestedTokensMint: tokenMint,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        rent: SYSVAR_RENT_PUBKEY,
-        systemProgram: anchor.web3.SystemProgram.programId,
-      },
-      signers: [vestor],
-    });
+    const tx3 = await program.rpc.makeVestment(
+      new anchor.BN(100),
+      null,
+      new anchor.BN(5),
+      4,
+      {
+        accounts: {
+          vestment: vestment,
+          vestor: vestor.publicKey,
+          vestorTokenAccount: vestorTokenAccount,
+          beneficiary: beneficiary.publicKey,
+          vestedTokens: vestedTokens,
+          vestedTokensMint: tokenMint,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          rent: SYSVAR_RENT_PUBKEY,
+          systemProgram: anchor.web3.SystemProgram.programId,
+        },
+        signers: [vestor],
+      }
+    );
 
-    // console.log(await connection.getTokenAccountBalance(vestedTokens));
+    await connection.confirmTransaction(tx3);
+    console.log("Vestment state: ");
+    console.log(await program.account.vestment.fetch(vestment));
 
-    await program.rpc.claimVestment(new anchor.BN(100), {
+    console.log("Vestor: ");
+    console.log(await connection.getTokenAccountBalance(vestorTokenAccount));
+
+    console.log("Vestment: ");
+    console.log(await connection.getTokenAccountBalance(vestedTokens));
+
+    await program.rpc.claimVestment({
       accounts: {
         vestment: vestment,
         beneficiary: beneficiary.publicKey,
@@ -112,10 +127,15 @@ describe("vesting", () => {
       signers: [beneficiary],
     });
 
+    console.log("Vestment state: ");
+    console.log(await program.account.vestment.fetch(vestment));
+
+    console.log("Beneficiary: ");
     console.log(
       await connection.getTokenAccountBalance(beneficiaryTokenAccount)
     );
 
+    console.log("Vestment: ");
     console.log(await connection.getTokenAccountBalance(vestedTokens));
   });
 
@@ -176,15 +196,15 @@ describe("vesting", () => {
       program.programId
     );
 
-    var cliff = 1;
-    var numberOfPeriods = 10;
-    var period = 1;
+    var cliff = 10;
+    var numberOfPeriods = 4;
+    var period = 5;
     var amount = 100;
-    var vestmentTimeinSeconds = Math.floor(Date.now() / 1000);
-    await program.rpc.makeVestment(
+    //var vestmentTimeinSeconds = Math.floor(Date.now() / 1000);
+    const tx3 = await program.rpc.makeVestment(
       new anchor.BN(amount),
-      cliff,
-      period,
+      null,
+      new anchor.BN(period),
       numberOfPeriods,
       {
         accounts: {
@@ -201,6 +221,18 @@ describe("vesting", () => {
         signers: [vestor],
       }
     );
+
+    await connection.confirmTransaction(tx3);
+
+    console.log("Vestment state: ");
+    console.log(await program.account.vestment.fetch(vestment));
+
+    console.log("Vestor: ");
+    console.log(await connection.getTokenAccountBalance(vestorTokenAccount));
+
+    console.log("Vestment: ");
+    console.log(await connection.getTokenAccountBalance(vestedTokens));
+
     function sleep(milliseconds) {
       const date = Date.now();
       let currentDate = null;
@@ -210,46 +242,77 @@ describe("vesting", () => {
     }
     sleep(5000);
 
-    //console.log(await connection.getTokenAccountBalance(vestedTokens));
+    await program.rpc.claimVestment({
+      accounts: {
+        vestment: vestment,
+        beneficiary: beneficiary.publicKey,
+        beneficiaryTokenAccount: beneficiaryTokenAccount,
+        vestedTokens: vestedTokens,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      },
+      signers: [beneficiary],
+    });
 
-    var currentTimeInSeconds = Math.floor(Date.now() / 1000); //unix timestamp in seconds
+    console.log("Vestment state: ");
+    console.log(await program.account.vestment.fetch(vestment));
 
-    const passedPeriods = Math.round(
-      (currentTimeInSeconds - vestmentTimeinSeconds - cliff) / period
-    );
-    console.log("Passed periods: " + passedPeriods);
-
-    let amountPerPeriod;
-    if (passedPeriods < numberOfPeriods) {
-      amountPerPeriod = amount / numberOfPeriods;
-    } else {
-      amountPerPeriod = amount;
-    }
-
-    console.log("Amount per period: " + amountPerPeriod);
-
-    let amountToClaim = amountPerPeriod * passedPeriods;
-
-    if (true) {
-      await program.rpc.claimVestment(new anchor.BN(amountToClaim), {
-        accounts: {
-          vestment: vestment,
-          beneficiary: beneficiary.publicKey,
-          beneficiaryTokenAccount: beneficiaryTokenAccount,
-          vestedTokens: vestedTokens,
-          tokenProgram: TOKEN_PROGRAM_ID,
-          systemProgram: anchor.web3.SystemProgram.programId,
-        },
-        signers: [beneficiary],
-      });
-    }
-    console.log("User tokens: ");
-
+    console.log("Beneficiary: ");
     console.log(
       await connection.getTokenAccountBalance(beneficiaryTokenAccount)
     );
-    console.log("Vestment tokens: ");
 
+    console.log("Vestment: ");
     console.log(await connection.getTokenAccountBalance(vestedTokens));
+
+    sleep(5000);
+
+    await program.rpc.claimVestment({
+      accounts: {
+        vestment: vestment,
+        beneficiary: beneficiary.publicKey,
+        beneficiaryTokenAccount: beneficiaryTokenAccount,
+        vestedTokens: vestedTokens,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      },
+      signers: [beneficiary],
+    });
+
+    console.log("Vestment state: ");
+    console.log(await program.account.vestment.fetch(vestment));
+
+    console.log("Beneficiary: ");
+    console.log(
+      await connection.getTokenAccountBalance(beneficiaryTokenAccount)
+    );
+
+    console.log("Vestment: ");
+    console.log(await connection.getTokenAccountBalance(vestedTokens));
+
+    // console.log("User tokens: ");
+    // console.log(
+    //   await connection.getTokenAccountBalance(beneficiaryTokenAccount)
+    // );
+    // console.log("Vestment tokens: ");
+    // console.log(await connection.getTokenAccountBalance(vestedTokens));
+
+    //var currentTimeInSeconds = Math.floor(Date.now() / 1000); //unix timestamp in seconds
+
+    // const passedPeriods = Math.round(
+    //   (currentTimeInSeconds - vestmentTimeinSeconds - cliff) / period
+    // );
+    // console.log("Passed periods: " + passedPeriods);
+
+    // let amountPerPeriod;
+    // if (passedPeriods < numberOfPeriods) {
+    //   amountPerPeriod = amount / numberOfPeriods;
+    // } else {
+    //   amountPerPeriod = amount;
+    // }
+
+    //console.log("Amount per period: " + amountPerPeriod);
+
+    //let amountToClaim = amountPerPeriod * passedPeriods;
   });
 });

@@ -199,7 +199,7 @@ describe("vesting", () => {
     var cliff = 10;
     var numberOfPeriods = 4;
     var period = 5;
-    var amount = 100;
+    var amount = 10;
     //var vestmentTimeinSeconds = Math.floor(Date.now() / 1000);
     const tx3 = await program.rpc.makeVestment(
       new anchor.BN(amount),

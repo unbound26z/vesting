@@ -19,13 +19,29 @@ pub mod vesting {
         let vestor: &Signer = &ctx.accounts.vestor;
         let vesting_start_at = Clock::get().unwrap().unix_timestamp;
 
+        if amount <=0 { //pitaj
+            return Err(ErrorCode::InvalidAmount.into());
+        }
+        if let Some(c) = cliff {
+            if c<=0 {
+            return Err(ErrorCode::InvalidCliff.into());
+            }
+        }
+        if period<=0 {
+            return Err(ErrorCode::InvalidPeriod.into());
+        }
+        if num_of_periods <=0 { //pitaj
+            return Err(ErrorCode::InvalidNumberOfPeriods.into());
+        }
+
+
         vestment.vestor = vestor.key();
         vestment.vesting_start_at = vesting_start_at;
         vestment.amount_vested = amount;
         vestment.amount_claimed = 0;
         vestment.period_length = period;
         vestment.num_of_periods = num_of_periods;
-        vestment.beneficiary = ctx.accounts.beneficiary.key(); // is this ok?
+        vestment.beneficiary = ctx.accounts.beneficiary.key();
         vestment.last_claim_period = None;
         vestment.amount_per_period = vestment.amount_vested.checked_div(vestment.num_of_periods as u64).unwrap();
 
@@ -60,6 +76,8 @@ pub mod vesting {
         let vestment = &mut ctx.accounts.vestment;
         let claim_time = Clock::get().unwrap().unix_timestamp;
         let mut amount_to_claim: Box<u64> = Box::new(0);
+
+
         if vestment.vesting_end_at >= claim_time {
        
         let mut num_of_claim_periods = Box::new(0);
@@ -105,7 +123,6 @@ pub mod vesting {
 }
 
 #[derive(Accounts)]
-//#[instruction(bump: u8)]    //needed?
 pub struct MakeVestment<'info> {
     #[account(
         init,
@@ -126,8 +143,6 @@ pub struct MakeVestment<'info> {
     /// CHECK: TODO
     pub beneficiary: AccountInfo<'info>,
 
-    // #[account(mut, constraint = token_account.mint == kind_of_token.key())]
-    // pub token_account: Account<'info, TokenAccount>,
     #[account(
         init,
         payer = vestor,
@@ -192,6 +207,19 @@ pub struct Vestment {
     pub last_claim_period: Option<i64>,
     pub vesting_end_at: i64,
     pub amount_per_period: u64,
+}
+
+#[error_code]
+pub enum ErrorCode {
+    #[msg("Insufficient funds")]
+    InvalidAmount,
+    #[msg("The cliff length provided is not valid")]
+    InvalidCliff,
+    #[msg("The period length provided is not valid")]
+    InvalidPeriod,
+    #[msg("The number of periods is not valid")]
+    InvalidNumberOfPeriods,
+    
 }
 
 // const DISCRIMINATOR_LENGTH: usize = 8;

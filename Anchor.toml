@@ -6,13 +6,9 @@ vesting = "2GxXeKFC6jL6eMj2a1dCn9XFesYp6WrGXq7HDBZtgcPZ"
 [registry]
 url = "https://anchor.projectserum.com"
 
-#[provider]
-#cluster = "http://127.0.0.1:8899"
-#wallet = "/Users/zazza/.config/solana/id.json"
+[provider]
+cluster = "devnet"
+wallet = "/Users/zazza/.config/solana/id.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts -g '#02'"
-
-[provider]
-cluster= "localnet"
-wallet="/Users/zazza/.config/solana/id.json"

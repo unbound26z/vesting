@@ -5,7 +5,7 @@ import "./App.css";
 import { useState } from "react";
 import FormInput from "./components/FormInput";
 import { Claim } from "./components/Claim";
-
+import * as anchor from "@project-serum/anchor";
 import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 import {
   ConnectionProvider,
@@ -22,17 +22,27 @@ import {
   PhantomWalletAdapter,
   SolflareWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
-import { clusterApiUrl, Connection, PublicKey } from "@solana/web3.js";
-import { Program, AnchorProvider, web3, BN, Wallet } from "@project-serum/anchor";
+import {
+  clusterApiUrl,
+  Connection,
+  Keypair,
+  PublicKey,
+  SystemProgram,
+  SYSVAR_RENT_PUBKEY,
+  Transaction,
+} from "@solana/web3.js";
+import { Program, web3, BN, Wallet, Provider } from "@project-serum/anchor";
 import ConnectWallet from "./components/ConnectWallet";
 import idl from "./idl.json";
-import { createAssociatedTokenAccount } from "@solana/spl-token";
-
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { sendTransaction } from "./send";
 
 require("@solana/wallet-adapter-react-ui/styles.css");
 
 //VARIABLES######################################
 const programID = new PublicKey(idl.metadata.address);
+
+const DEFAULT_TIMEOUT = 31000;
 
 //APP############################################
 
@@ -77,7 +87,7 @@ const Content: FC = () => {
     cliff: "",
     period: "",
     beneficiary: "",
-    num_of_periods: ""
+    num_of_periods: "",
   });
 
   const inputs = [
@@ -149,10 +159,13 @@ const Content: FC = () => {
     }
     //create the provider and return it to the caller
     //network set to localnet
-    const network = "http://127.0.0.1:8899";
-    const connection = new Connection(network, "processed");
+    const network = clusterApiUrl("devnet");
+    const connection = new Connection(
+      "https://explorer-api.devnet.solana.com/",
+      "processed"
+    );
 
-    const provider = new AnchorProvider(connection, wallet, {
+    const provider = new Provider(connection, wallet, {
       preflightCommitment: "processed",
     });
     return provider;
@@ -170,40 +183,87 @@ const Content: FC = () => {
     const b = JSON.parse(a);
     const program = new Program(b, idl.metadata.address, provider);
 
-    const [vestmentPDA, vestmentBump] = await PublicKey.findProgramAddress(
-      [Buffer.from("vestment")],
-      programID
-    );
-
-    let amount = values.amount;
-    let cliff = values.cliff;
-    let period = values.period;
-    let num_of_periods=values.num_of_periods;
-    let beneficiary = values.beneficiary;
-    let mint = new web3.PublicKey("3f4Fy3fgn52kzu5rfcRK9Je9vk1MaGu2j48LBq1h4F9a"); //??
-
+    //za claim
+    // const vestorTokenAcc = anchor.web3.Keypair.generate();
+    // const vestorTokenAccount = SystemProgram.createAccount(
+    //   {provider.wallet.publicKey,vestorTokenAcc.publicKey,});
 
     //let tokenAccount = createAssociatedTokenAccount(provider.connection,,mint,vestmentPDA);
 
+    ////
+    // const vestorTokenAccount = await getOrCreateAssociatedTokenAccount(
+    //   provider.connection,
+    //   provider.wallet,
+    //   new PublicKey(tokenMint),
+    //   provider.wallet.publicKey
+    //   )
+
     try {
-      await program.rpc.makeVestment(amount,cliff,period,beneficiary,num_of_periods,{
-        accounts: {
-          vestment: vestmentPDA,
-          vestor: provider.wallet.publicKey,
-          systemProgram: web3.SystemProgram.programId,
-        //  token_account:
+      let amount = values.amount;
+      let cliff = values.cliff;
+      let period = values.period;
+      let num_of_periods = values.num_of_periods;
+      let beneficiary = new PublicKey(values.beneficiary);
+
+      let tokenMint = "6bscZfAt91RAfqAsUTu9gSve6gALhiUChJFsLXjVbJZS";
+
+      const [vestedTokens] = await PublicKey.findProgramAddress(
+        [Buffer.from("vested-tokens"), beneficiary.toBuffer()],
+        program.programId
+      );
+
+      const [vestment, vestmentBump] = await PublicKey.findProgramAddress(
+        [Buffer.from("vestment"), vestedTokens.toBuffer()],
+        programID
+      );
+
+      const vestorTokenAcc =
+        await provider.connection.getParsedTokenAccountsByOwner(
+          wallet!.publicKey,
+          { mint: new PublicKey(tokenMint) }
+        );
+      console.log(vestorTokenAcc);
+      debugger;
+      const mV = program.instruction.makeVestment(
+        new anchor.BN(amount),
+        new anchor.BN(cliff),
+        new anchor.BN(period),
+        num_of_periods,
+        {
+          accounts: {
+            vestment: vestment,
+            vestor: provider.wallet.publicKey,
+            vestorTokenAccount: vestorTokenAcc.value[0].pubkey,
+            vestedTokens: vestedTokens,
+            vestedTokensMint: new PublicKey(tokenMint),
+            beneficiary,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            rent: SYSVAR_RENT_PUBKEY,
+            systemProgram: web3.SystemProgram.programId,
+          },
         }
+      );
+      const recentBlockhash = (await provider.connection.getLatestBlockhash())
+        .blockhash;
+      const tx1 = new Transaction({
+        feePayer: wallet!.publicKey,
+        recentBlockhash: recentBlockhash,
       });
+      tx1.add(mV);
+      //const signedTx: Transaction = await wallet!.signTransaction(tx1);
+      if (wallet) {
+        sendTransaction({
+          transaction: tx1,
+          connection: provider.connection,
+          wallet: wallet,
+        });
+      }
     } catch (err) {
       console.log("Transaction error: " + err);
     }
   }
 
-  async function claimVestment() {
-    
-
-
-  }
+  async function claimVestment() {}
 
   return (
     <div className="app">

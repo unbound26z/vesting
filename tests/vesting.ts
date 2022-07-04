@@ -3,7 +3,10 @@ import { Program } from "@project-serum/anchor";
 import { Vesting } from "../target/types/vesting";
 import * as assert from "assert";
 import * as bs58 from "bs58";
-import { TOKEN_PROGRAM_ID } from "@project-serum/anchor/dist/cjs/utils/token";
+import {
+  ASSOCIATED_PROGRAM_ID,
+  TOKEN_PROGRAM_ID,
+} from "@project-serum/anchor/dist/cjs/utils/token";
 import {
   LAMPORTS_PER_SOL,
   PublicKey,
@@ -13,8 +16,8 @@ import {
   SYSVAR_EPOCH_SCHEDULE_PUBKEY,
 } from "@solana/web3.js";
 import {
-  createMint,
   createAssociatedTokenAccount,
+  createMint,
   mintTo,
 } from "@solana/spl-token";
 

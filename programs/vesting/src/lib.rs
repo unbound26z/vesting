@@ -146,7 +146,7 @@ pub struct MakeVestment<'info> {
     #[account(
         init,
         payer = vestor,
-        seeds = [b"vested-tokens",beneficiary.key().as_ref()],
+        seeds = [b"vested-tokens", beneficiary.key().as_ref()],
         bump,
         token::mint = vested_tokens_mint,
         token::authority = vested_tokens,
@@ -180,7 +180,7 @@ pub struct ClaimVestment<'info> {
 
     #[account(
         mut,
-        seeds = [b"vested-tokens",beneficiary.key().as_ref()],
+        seeds = [b"vested-tokens", beneficiary.key().as_ref()],
         bump,
     )]
     pub vested_tokens: Account<'info, TokenAccount>,

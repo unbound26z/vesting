@@ -1,73 +1,195 @@
 {
-    "version": "0.1.0",
-    "name": "vesting",
-    "instructions": [
-      {
-        "name": "makeVestment",
-        "accounts": [
-          {
-            "name": "vestment",
-            "isMut": true,
-            "isSigner": true
-          },
+  "version": "0.1.0",
+  "name": "vesting",
+  "instructions": [
+    {
+      "name": "makeVestment",
+      "accounts": [
+        {
+          "name": "vestment",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "vestor",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "vestorTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "beneficiary",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "vestedTokens",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "vestedTokensMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "cliff",
+          "type": {
+            "option": "i64"
+          }
+        },
+        {
+          "name": "period",
+          "type": "i64"
+        },
+        {
+          "name": "numOfPeriods",
+          "type": "u32"
+        }
+      ]
+    },
+    {
+      "name": "claimVestment",
+      "accounts": [
+        {
+          "name": "vestment",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "beneficiary",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "beneficiaryTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "vestedTokens",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Vestment",
+      "type": {
+        "kind": "struct",
+        "fields": [
           {
             "name": "vestor",
-            "isMut": true,
-            "isSigner": true
+            "type": "publicKey"
           },
           {
-            "name": "systemProgram",
-            "isMut": false,
-            "isSigner": false
-          }
-        ],
-        "args": [
-          {
-            "name": "amount",
-            "type": "u16"
+            "name": "vestingStartAt",
+            "type": "i64"
           },
           {
-            "name": "cliff",
-            "type": "u16"
+            "name": "amountVested",
+            "type": "u64"
           },
           {
-            "name": "period",
-            "type": "u8"
+            "name": "amountClaimed",
+            "type": "u64"
+          },
+          {
+            "name": "periodLength",
+            "type": "i64"
+          },
+          {
+            "name": "numOfPeriods",
+            "type": "u32"
+          },
+          {
+            "name": "beneficiary",
+            "type": "publicKey"
+          },
+          {
+            "name": "cliffEndAt",
+            "type": {
+              "option": "i64"
+            }
+          },
+          {
+            "name": "lastClaimPeriod",
+            "type": {
+              "option": "i64"
+            }
+          },
+          {
+            "name": "vestingEndAt",
+            "type": "i64"
+          },
+          {
+            "name": "amountPerPeriod",
+            "type": "u64"
           }
         ]
       }
-    ],
-    "accounts": [
-      {
-        "name": "Vestment",
-        "type": {
-          "kind": "struct",
-          "fields": [
-            {
-              "name": "vestor",
-              "type": "publicKey"
-            },
-            {
-              "name": "timestamp",
-              "type": "i64"
-            },
-            {
-              "name": "amount",
-              "type": "u16"
-            },
-            {
-              "name": "cliff",
-              "type": "u16"
-            },
-            {
-              "name": "period",
-              "type": "u8"
-            }
-          ]
-        }
-      }
-    ],
-    "metadata": {
-      "address": "2GxXeKFC6jL6eMj2a1dCn9XFesYp6WrGXq7HDBZtgcPZ"
     }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "InvalidAmount",
+      "msg": "Insufficient funds"
+    },
+    {
+      "code": 6001,
+      "name": "InvalidCliff",
+      "msg": "The cliff length provided is not valid"
+    },
+    {
+      "code": 6002,
+      "name": "InvalidPeriod",
+      "msg": "The period length provided is not valid"
+    },
+    {
+      "code": 6003,
+      "name": "InvalidNumberOfPeriods",
+      "msg": "The number of periods is not valid"
+    }
+  ],
+  "metadata": {
+    "address": "2GxXeKFC6jL6eMj2a1dCn9XFesYp6WrGXq7HDBZtgcPZ"
   }
+}

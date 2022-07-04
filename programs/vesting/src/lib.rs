@@ -37,7 +37,8 @@ pub mod vesting {
 
         vestment.vestor = vestor.key();
         vestment.vesting_start_at = vesting_start_at;
-        vestment.amount_vested = amount;
+        //for the token fix
+        vestment.amount_vested = amount*1000000000;
         vestment.amount_claimed = 0;
         vestment.period_length = period;
         vestment.num_of_periods = num_of_periods;
@@ -66,7 +67,7 @@ pub mod vesting {
                     authority: ctx.accounts.vestor.to_account_info(),
                 },
             ),
-            amount as u64,
+            amount*1000000000 as u64,
         )?;
 
         Ok(())

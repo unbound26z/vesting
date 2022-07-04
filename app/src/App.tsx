@@ -153,6 +153,10 @@ const Content: FC = () => {
 
   const wallet = useAnchorWallet();
 
+  const connection = new Connection(
+    "https://explorer-api.devnet.solana.com/",
+    "processed"
+  );
   function getProvider() {
     if (!wallet) {
       return null;
@@ -160,10 +164,6 @@ const Content: FC = () => {
     //create the provider and return it to the caller
     //network set to localnet
     const network = clusterApiUrl("devnet");
-    const connection = new Connection(
-      "https://explorer-api.devnet.solana.com/",
-      "processed"
-    );
 
     const provider = new Provider(connection, wallet, {
       preflightCommitment: "processed",
@@ -223,7 +223,6 @@ const Content: FC = () => {
           { mint: new PublicKey(tokenMint) }
         );
       console.log(vestorTokenAcc);
-      debugger;
       const mV = program.instruction.makeVestment(
         new anchor.BN(amount),
         new anchor.BN(cliff),
@@ -254,7 +253,7 @@ const Content: FC = () => {
       if (wallet) {
         sendTransaction({
           transaction: tx1,
-          connection: provider.connection,
+          connection: connection,
           wallet: wallet,
         });
       }

@@ -11,11 +11,11 @@ import {
 import Wallet from "@project-serum/sol-wallet-adapter";
 //import { sleep } from "@project-serum/common";
 import { WalletSigner } from "@solana/spl-governance";
-import { AnchorWallet } from "@solana/wallet-adapter-react";
 
 const sleep = (ttl: number) => {
   return new Promise((resolve) => setTimeout(() => resolve(true), ttl));
 };
+
 class TransactionError extends Error {
   public txid: string;
   constructor(message: string, txid?: string) {
@@ -40,7 +40,7 @@ export async function sendTransaction({
   timeout = DEFAULT_TIMEOUT,
 }: {
   transaction: Transaction;
-  wallet: AnchorWallet; //WalletSigner
+  wallet: WalletSigner;
   signers?: Array<Keypair>;
   connection: Connection;
   sendingMessage?: string;
@@ -70,7 +70,7 @@ export async function signTransaction({
   connection,
 }: {
   transaction: Transaction;
-  wallet: WalletSigner; //WalletSigner
+  wallet: WalletSigner;
   signers?: Array<Keypair>;
   connection: Connection;
 }) {
@@ -152,7 +152,7 @@ export async function sendSignedTransaction({
       skipPreflight: true,
     }
   );
-  console.log(txid);
+  console.log("notify2");
 
   console.log("Started awaiting confirmation for", txid);
 
@@ -175,10 +175,10 @@ export async function sendSignedTransaction({
       "calling signatures confirmation",
       await awaitTransactionSignatureConfirmation(txid, timeout, connection)
     );
-  } catch (err) {
-    // if (err.timeout) {
-    //   throw new Error("Timed out awaiting confirmation on transaction");
-    // }
+  } catch (err: any) {
+    if (err.timeout) {
+      throw new Error("Timed out awaiting confirmation on transaction");
+    }
 
     let simulateResult: SimulatedTransactionResponse | null = null;
 
@@ -246,7 +246,7 @@ export async function sendSignedAndAdjacentTransactions({
   successMessage?: string;
   timeout?: number;
 }): Promise<string> {
-  //notify({ message: sendingMessage });
+  // notify({ message: sendingMessage });
 
   // Serialize both transactions
   const rawTransaction = signedTransaction.serialize();
@@ -289,10 +289,10 @@ export async function sendSignedAndAdjacentTransactions({
         connection
       )
     );
-  } catch (err) {
-    // if (err.timeout) {
-    //   throw new Error("Timed out awaiting confirmation on transaction");
-    // }
+  } catch (err: any) {
+    if (err.timeout) {
+      throw new Error("Timed out awaiting confirmation on transaction");
+    }
 
     let simulateResult: SimulatedTransactionResponse | null = null;
 

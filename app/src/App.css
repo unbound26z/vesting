@@ -55,8 +55,9 @@
 
 form{
     background-color: white;
-    padding: 5px 60px;
-    border-radius: 10px;
+    /* padding: 5px 60px; */
+    padding: 1vh 9vh;
+    border-radius: 2vh;
     margin-top: 5vh;
     margin-bottom: 2.5vh;
 }

@@ -34,15 +34,24 @@ import {
 import { Program, web3, BN, Wallet, Provider } from "@project-serum/anchor";
 import ConnectWallet from "./components/ConnectWallet";
 import idl from "./idl.json";
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { sendTransaction } from "./send";
+import {
+  createAssociatedTokenAccount,
+  getOrCreateAssociatedTokenAccount,
+  TOKEN_PROGRAM_ID,
+} from "@solana/spl-token";
+import {
+  sendSignedTransaction,
+  sendTransaction,
+  signTransaction,
+} from "./send";
+import { WalletSigner } from "@solana/spl-governance";
 
 require("@solana/wallet-adapter-react-ui/styles.css");
 
 //VARIABLES######################################
 const programID = new PublicKey(idl.metadata.address);
 
-const DEFAULT_TIMEOUT = 31000;
+const DEFAULT_TIMEOUT = 25000;
 
 //APP############################################
 
@@ -83,6 +92,7 @@ const Context: FC<{ children: ReactNode }> = ({ children }) => {
 
 const Content: FC = () => {
   const [values, setValues] = useState({
+    //initial values
     amount: "",
     cliff: "",
     period: "",
@@ -91,6 +101,7 @@ const Content: FC = () => {
   });
 
   const inputs = [
+    //setting up the form
     {
       id: 1,
       name: "amount",
@@ -143,6 +154,7 @@ const Content: FC = () => {
     },
   ];
 
+  //setup
   const handleSubmit = (e) => {
     e.preventDefault();
   };
@@ -153,10 +165,13 @@ const Content: FC = () => {
 
   const wallet = useAnchorWallet();
 
+  //setting the connection up for the devnet
   const connection = new Connection(
     "https://explorer-api.devnet.solana.com/",
     "processed"
   );
+
+  //declaring the function so we get the provider
   function getProvider() {
     if (!wallet) {
       return null;
@@ -171,60 +186,52 @@ const Content: FC = () => {
     return provider;
   }
 
+  //onclick make vestment button do this
   async function makeVestment() {
     const provider = getProvider();
-    //const vestment = web3.Keypair.generate(); //is this needed cuz its a pda
     if (!provider) {
       throw "Provider is null.";
     }
 
-    //fixing some type of idl bug this way
+    //fixing some type of idl bug this way, but basically importing the program into the constant so we have access to the func
     const a = JSON.stringify(idl);
     const b = JSON.parse(a);
     const program = new Program(b, idl.metadata.address, provider);
 
-    //za claim
-    // const vestorTokenAcc = anchor.web3.Keypair.generate();
-    // const vestorTokenAccount = SystemProgram.createAccount(
-    //   {provider.wallet.publicKey,vestorTokenAcc.publicKey,});
-
-    //let tokenAccount = createAssociatedTokenAccount(provider.connection,,mint,vestmentPDA);
-
-    ////
-    // const vestorTokenAccount = await getOrCreateAssociatedTokenAccount(
-    //   provider.connection,
-    //   provider.wallet,
-    //   new PublicKey(tokenMint),
-    //   provider.wallet.publicKey
-    //   )
-
     try {
+      //take the values from the form
       let amount = values.amount;
       let cliff = values.cliff;
       let period = values.period;
       let num_of_periods = values.num_of_periods;
       let beneficiary = new PublicKey(values.beneficiary);
 
+      //this is our token mint
       let tokenMint = "6bscZfAt91RAfqAsUTu9gSve6gALhiUChJFsLXjVbJZS";
 
+      //PDA: Token account of the vestment
       const [vestedTokens] = await PublicKey.findProgramAddress(
+        //token acc from the vestment
         [Buffer.from("vested-tokens"), beneficiary.toBuffer()],
         program.programId
       );
 
+      //PDA: The actual vestment account
       const [vestment, vestmentBump] = await PublicKey.findProgramAddress(
         [Buffer.from("vestment"), vestedTokens.toBuffer()],
         programID
       );
 
+      //gaining access to the users tokens
       const vestorTokenAcc =
         await provider.connection.getParsedTokenAccountsByOwner(
           wallet!.publicKey,
           { mint: new PublicKey(tokenMint) }
         );
-      console.log(vestorTokenAcc);
+
+      //passing the arguments into our instruction so we can put it in the transaction
       const mV = program.instruction.makeVestment(
-        new anchor.BN(amount),
+        new anchor.BN(amount), //BN=big number
         new anchor.BN(cliff),
         new anchor.BN(period),
         num_of_periods,
@@ -232,7 +239,7 @@ const Content: FC = () => {
           accounts: {
             vestment: vestment,
             vestor: provider.wallet.publicKey,
-            vestorTokenAccount: vestorTokenAcc.value[0].pubkey,
+            vestorTokenAccount: vestorTokenAcc.value[0].pubkey, //its an array for some reason
             vestedTokens: vestedTokens,
             vestedTokensMint: new PublicKey(tokenMint),
             beneficiary,
@@ -242,14 +249,19 @@ const Content: FC = () => {
           },
         }
       );
+
+      //taking the most recent blockhash
       const recentBlockhash = (await provider.connection.getLatestBlockhash())
         .blockhash;
+      //making our transaction
       const tx1 = new Transaction({
         feePayer: wallet!.publicKey,
         recentBlockhash: recentBlockhash,
       });
+      //passing our instruction into the transaction
       tx1.add(mV);
-      //const signedTx: Transaction = await wallet!.signTransaction(tx1);
+
+      //sending the transaction = interacting with the blockchain
       if (wallet) {
         sendTransaction({
           transaction: tx1,
@@ -262,7 +274,72 @@ const Content: FC = () => {
     }
   }
 
-  async function claimVestment() {}
+  async function claimVestment() {
+    const provider = getProvider();
+    //const vestment = web3.Keypair.generate(); //is this needed cuz its a pda
+    if (!provider) {
+      throw "Provider is null.";
+    }
+
+    //fixing some type of idl bug this way
+    const a = JSON.stringify(idl);
+    const b = JSON.parse(a);
+    const program = new Program(b, idl.metadata.address, provider);
+
+    try {
+      //our token mint
+      let tokenMint = "6bscZfAt91RAfqAsUTu9gSve6gALhiUChJFsLXjVbJZS";
+      //taking the wallet of the user that claims
+      let beneficiary = provider.wallet.publicKey;
+      //PDA: Token account of vestment
+      const [vestedTokens] = await PublicKey.findProgramAddress(
+        [Buffer.from("vested-tokens"), beneficiary.toBuffer()],
+        program.programId
+      );
+      //PDA: Vestment
+      const [vestment, vestmentBump] = await PublicKey.findProgramAddress(
+        [Buffer.from("vestment"), vestedTokens.toBuffer()],
+        programID
+      );
+      //Token account of user that wants to claim
+      const beneTokenAcc =
+        await provider.connection.getParsedTokenAccountsByOwner(
+          wallet!.publicKey,
+          { mint: new PublicKey(tokenMint) }
+        );
+      //taking our instruction and passing arguments
+      const cV = program.instruction.claimVestment({
+        accounts: {
+          vestment: vestment,
+          beneficiary: beneficiary,
+          beneficiaryTokenAccount: beneTokenAcc.value[0].pubkey,
+          vestedTokens: vestedTokens,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: web3.SystemProgram.programId,
+        },
+      });
+      //taking recent blockhash
+      const recentBlockhash = (await provider.connection.getLatestBlockhash())
+        .blockhash;
+      //making our transaction
+      const tx2 = new Transaction({
+        feePayer: wallet!.publicKey,
+        recentBlockhash: recentBlockhash,
+      });
+      //passing our instruction to our transaction
+      tx2.add(cV);
+      //sending our instruction
+      if (wallet) {
+        await sendTransaction({
+          transaction: tx2,
+          connection: connection,
+          wallet: wallet,
+        });
+      }
+    } catch (err) {
+      console.log("Transaction error: " + err);
+    }
+  }
 
   return (
     <div className="app">

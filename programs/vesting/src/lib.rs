@@ -19,7 +19,7 @@ pub mod vesting {
         let vestor: &Signer = &ctx.accounts.vestor;
         let vesting_start_at = Clock::get().unwrap().unix_timestamp;
 
-        if amount <=0 { //pitaj
+        if amount <=0 { 
             return Err(ErrorCode::InvalidAmount.into());
         }
         if let Some(c) = cliff {
@@ -30,14 +30,13 @@ pub mod vesting {
         if period<=0 {
             return Err(ErrorCode::InvalidPeriod.into());
         }
-        if num_of_periods <=0 { //pitaj
+        if num_of_periods <=0 { 
             return Err(ErrorCode::InvalidNumberOfPeriods.into());
         }
 
 
         vestment.vestor = vestor.key();
         vestment.vesting_start_at = vesting_start_at;
-        //for the token fix
         vestment.amount_vested = amount*1000000000;
         vestment.amount_claimed = 0;
         vestment.period_length = period;
@@ -140,6 +139,7 @@ pub struct MakeVestment<'info> {
 
     #[account(mut)]
     pub vestor_token_account: Account<'info, TokenAccount>,
+
     #[account()]
     /// CHECK: TODO
     pub beneficiary: AccountInfo<'info>,
@@ -174,7 +174,7 @@ pub struct ClaimVestment<'info> {
     pub vestment: Account<'info, Vestment>,
 
     #[account(mut)] //mut to make the amount he has HIGHER
-    pub beneficiary: Signer<'info>, //=AccountInfo  has to sign it too
+    pub beneficiary: Signer<'info>, //=AccountInfo has to sign it too
 
     #[account(mut)]
     pub beneficiary_token_account: Account<'info, TokenAccount>,
@@ -199,12 +199,12 @@ pub struct ClaimVestment<'info> {
 pub struct Vestment {
     pub vestor: Pubkey,        // whose vestment
     pub vesting_start_at: i64, //start time
-    pub amount_vested: u64,
-    pub amount_claimed: u64,
+    pub amount_vested: u64, // amount
+    pub amount_claimed: u64, //amount to claim
     pub period_length: i64, //when it unlocks the percent
-    pub num_of_periods: u32,
+    pub num_of_periods: u32, 
     pub beneficiary: Pubkey,       // who gets the money
-    pub cliff_end_at: Option<i64>, //
+    pub cliff_end_at: Option<i64>, // if entered it represents the amount of days for cliff to end
     pub last_claim_period: Option<i64>,
     pub vesting_end_at: i64,
     pub amount_per_period: u64,

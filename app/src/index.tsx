@@ -3,10 +3,13 @@ import "./index.css";
 import App from "./App";
 import reportWebVitals from "./reportWebVitals";
 import { render } from "react-dom";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const renderUp = () => {
   render(
     <React.StrictMode>
+      <ToastContainer />
       <App />
     </React.StrictMode>,
     document.getElementById("root") as HTMLElement

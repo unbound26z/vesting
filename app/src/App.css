@@ -67,30 +67,6 @@ h1{
     text-align: center;
 }
 
-/* button{
-    width: 100%;
-    height: 50px;
-    padding: 10px;
-    border: none;
-    background-color: #FFBF46;
-    color: rgba(0,0,0,0.9);
-    border-radius: 5px;
-    font-weight: bold;
-    font-size: 18px;
-    cursor: pointer;
-    margin-top: 15px;
-    margin-bottom: 30px;
-} */
-
-/* .connectWallet{
-  margin-bottom: 15px;
-  width: 147.02px;
-} */
-
-/* .wallet-adapter-button {
-  width: 147.02px;
-} */
-
 
 .vestButton {
   position: relative;
@@ -110,4 +86,31 @@ h1{
   margin-top: 3vh;
   width: auto;
 
+}
+
+
+@import url('https://fonts.googleapis.com/css2?family=Alfa+Slab+One&display=swap');
+
+#forestPng{ 
+  position:absolute;
+  /* font-family:'Alfa Slab One', cursive; */
+  /* color:#77DD77; */
+  /* font-size: 7vh; */
+  margin-top: 49.5vh;
+  margin-left: 70vh;
+  height: 50vh;
+  size: 3vh;
+  /* background-color:bisque; */
+}
+#vestPng{ 
+  position:absolute;
+  /* font-family:'Alfa Slab One', cursive; */
+  /* color:#77DD77; */
+  /* font-size: 7vh; */
+  left: -22vh;
+  bottom:-24.5vh;
+  /* height: 50vh; */
+  /* size: 3vh; */
+  height: 50vh;
+  /* background-color:bisque; */
 }

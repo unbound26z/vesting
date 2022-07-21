@@ -45,6 +45,7 @@ import {
   signTransaction,
 } from "./send";
 import { WalletSigner } from "@solana/spl-governance";
+import { toast } from "react-toastify";
 
 require("@solana/wallet-adapter-react-ui/styles.css");
 
@@ -263,14 +264,17 @@ const Content: FC = () => {
 
       //sending the transaction = interacting with the blockchain
       if (wallet) {
-        sendTransaction({
+        await sendTransaction({
           transaction: tx1,
           connection: connection,
           wallet: wallet,
         });
       }
+
+      toast.success("Vesting succesful!");
     } catch (err) {
       console.log("Transaction error: " + err);
+      toast.error("Failed to vest!");
     }
   }
 
@@ -336,8 +340,10 @@ const Content: FC = () => {
           wallet: wallet,
         });
       }
+      toast.success("Successful claim!");
     } catch (err) {
       console.log("Transaction error: " + err);
+      toast.error("Failed to claim!");
     }
   }
 
@@ -371,6 +377,9 @@ const Content: FC = () => {
           Claim tokens
         </button>
       </div>
+      <img src="vestpng.png" id="vestPng"></img>
+      <img src="forestpng.png" id="forestPng"></img>
+      {/* <h1 id="vestForest">Vest Forest</h1> */}
     </div>
   );
 };

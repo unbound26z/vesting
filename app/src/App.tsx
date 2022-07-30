@@ -134,6 +134,184 @@ const Content: FC = () => {
     return provider;
   }
 
+<<<<<<< Updated upstream
+=======
+  //onclick make vestment button do this
+  async function makeVestment() {
+    const provider = getProvider();
+    if (!provider) {
+      throw "Provider is null.";
+    }
+
+    //fixing some type of idl bug this way, but basically importing the program into the constant so we have access to the func
+    const a = JSON.stringify(idl);
+    const b = JSON.parse(a);
+    const program = new Program(b, idl.metadata.address, provider);
+
+    try {
+      //take the values from the form
+      let amount = values.amount;
+      let cliff = values.cliff;
+      let period = values.period;
+      let num_of_periods = values.num_of_periods;
+      let beneficiary = new PublicKey(values.beneficiary);
+
+      //this is our token mint
+      let tokenMint = "6bscZfAt91RAfqAsUTu9gSve6gALhiUChJFsLXjVbJZS";
+      let tokenMintKey = new PublicKey(tokenMint);
+      //PDA: Token account of the vestment
+      const [vestedTokens] = await PublicKey.findProgramAddress(
+        //token acc from the vestment
+        [Buffer.from("vested-tokens"), beneficiary.toBuffer()],
+        program.programId
+      );
+
+      //PDA: The actual vestment account
+      const [vestment, vestmentBump] = await PublicKey.findProgramAddress(
+        [Buffer.from("vestment"), vestedTokens.toBuffer()],
+        programID
+      );
+
+      const [vestmentLedger] = await PublicKey.findProgramAddress(
+        [Buffer.from("vestment-ledger"), beneficiary.toBuffer(), Buffer.from("vestment"), tokenMintKey.toBuffer()],
+        programID
+      );
+
+      //gaining access to the users tokens
+      const vestorTokenAcc =
+        await provider.connection.getParsedTokenAccountsByOwner(
+          wallet!.publicKey,
+          { mint: new PublicKey(tokenMint) }
+        );
+
+      //passing the arguments into our instruction so we can put it in the transaction
+      const mV = program.instruction.makeVestment(
+        new anchor.BN(amount), //BN=big number
+        new anchor.BN(cliff),
+        new anchor.BN(period),
+        num_of_periods,
+        {
+          accounts: {
+            vestmentLedger: vestmentLedger,
+            vestment: vestment,
+            vestor: provider.wallet.publicKey,
+            vestorTokenAccount: vestorTokenAcc.value[0].pubkey, //its an array for some reason
+            vestedTokens: vestedTokens,
+            vestedTokensMint: new PublicKey(tokenMint),
+            beneficiary,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            rent: SYSVAR_RENT_PUBKEY,
+            systemProgram: web3.SystemProgram.programId,
+          },
+        }
+      );
+
+      //taking the most recent blockhash
+      const recentBlockhash = (await provider.connection.getLatestBlockhash())
+        .blockhash;
+      //making our transaction
+      const tx1 = new Transaction({
+        feePayer: wallet!.publicKey,
+        recentBlockhash: recentBlockhash,
+      });
+      //passing our instruction into the transaction
+      tx1.add(mV);
+
+      //sending the transaction = interacting with the blockchain
+      if (wallet) {
+        await sendTransaction({
+          transaction: tx1,
+          connection: connection,
+          wallet: wallet,
+        });
+      }
+
+      toast.success("Vesting succesful!");
+    } catch (err) {
+      console.log("Transaction error: " + err);
+      toast.error("Failed to vest!");
+    }
+  }
+
+  async function claimVestment() {
+    let tokenMint = "6bscZfAt91RAfqAsUTu9gSve6gALhiUChJFsLXjVbJZS";
+    let tokenMintKey = new PublicKey(tokenMint);
+
+    const provider = getProvider();
+    //const vestment = web3.Keypair.generate(); //is this needed cuz its a pda
+    if (!provider) {
+      throw "Provider is null.";
+    }
+
+    //fixing some type of idl bug this way
+    const a = JSON.stringify(idl);
+    const b = JSON.parse(a);
+    const program = new Program(b, idl.metadata.address, provider);
+
+    try {
+      //our token mint
+      let tokenMint = "6bscZfAt91RAfqAsUTu9gSve6gALhiUChJFsLXjVbJZS";
+      //taking the wallet of the user that claims
+      let beneficiary = provider.wallet.publicKey;
+      //PDA: Token account of vestment
+      const [vestedTokens] = await PublicKey.findProgramAddress(
+        [Buffer.from("vested-tokens"), beneficiary.toBuffer()],
+        program.programId
+      );
+      //PDA: Vestment
+      const [vestment, vestmentBump] = await PublicKey.findProgramAddress(
+        [Buffer.from("vestment"), vestedTokens.toBuffer()],
+        programID
+      );
+      //Token account of user that wants to claim
+      const beneTokenAcc = await provider.connection.getParsedTokenAccountsByOwner(
+        wallet!.publicKey,
+        { mint: new PublicKey(tokenMint) }
+      );
+
+      const [vestmentLedger] = await PublicKey.findProgramAddress(
+        [Buffer.from("vestment-ledger"), beneficiary.toBuffer(), Buffer.from("vestment"), tokenMintKey.toBuffer()],
+        programID
+      )
+
+      //taking our instruction and passing arguments
+      const cV = program.instruction.claimVestment({
+        accounts: {
+          vestmentLedger: vestmentLedger,
+          vestment: vestment,
+          beneficiary: beneficiary,
+          beneficiaryTokenAccount: beneTokenAcc.value[0].pubkey,
+          vestedTokens: vestedTokens,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: web3.SystemProgram.programId,
+        },
+      });
+      //taking recent blockhash
+      const recentBlockhash = (await provider.connection.getLatestBlockhash())
+        .blockhash;
+      //making our transaction
+      const tx2 = new Transaction({
+        feePayer: wallet!.publicKey,
+        recentBlockhash: recentBlockhash,
+      });
+      //passing our instruction to our transaction
+      tx2.add(cV);
+      //sending our instruction
+      if (wallet) {
+        await sendTransaction({
+          transaction: tx2,
+          connection: connection,
+          wallet: wallet,
+        });
+      }
+      toast.success("Successful claim!");
+    } catch (err) {
+      console.log("Transaction error: " + err);
+      toast.error("Failed to claim!");
+    }
+  }
+
+>>>>>>> Stashed changes
   return (
     <div className="app">
       <WalletMultiButton />

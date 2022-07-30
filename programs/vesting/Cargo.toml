@@ -19,4 +19,10 @@ default = []
 overflow-checks = true
 
 [dependencies]
+<<<<<<< Updated upstream
 anchor-lang = "0.24.2"
+=======
+anchor-lang =  {version = "0.24.2", features = ["init-if-needed"]}
+anchor-spl = "0.24.2"
+round = "0.1.0"
+>>>>>>> Stashed changes

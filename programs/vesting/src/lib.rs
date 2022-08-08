@@ -18,6 +18,11 @@ pub mod vesting {
         let vestment: &mut Account<Vestment> = &mut ctx.accounts.vestment;
         let vestor: &Signer = &ctx.accounts.vestor;
         let vesting_start_at = Clock::get().unwrap().unix_timestamp;
+        let ledger = &mut ctx.accounts.ledger;
+
+        ledger.vestment_beneficiary = ctx.accounts.beneficiary.key();
+        ledger.vestment_mint = ctx.accounts.vested_tokens_mint.key();
+        ledger.vestment_count= ledger.vestment_count.checked_add(1).unwrap();
 
         if amount <=0 { 
             return Err(ErrorCode::InvalidAmount.into());
@@ -44,6 +49,7 @@ pub mod vesting {
         vestment.beneficiary = ctx.accounts.beneficiary.key();
         vestment.last_claim_period = None;
         vestment.amount_per_period = vestment.amount_vested.checked_div(vestment.num_of_periods as u64).unwrap();
+        vestment.is_active = true;
 
         if let Some(c) = cliff {
             vestment.cliff_end_at = vestment.vesting_start_at.checked_add(c);
@@ -117,6 +123,10 @@ pub mod vesting {
         )?;
 
         vestment.amount_claimed = vestment.amount_claimed.checked_add(*amount_to_claim).unwrap();
+
+        if vestment.amount_vested-vestment.amount_claimed=0 {
+            vestment.is_active=false;
+        }
        
         Ok(())
     }
@@ -125,10 +135,19 @@ pub mod vesting {
 #[derive(Accounts)]
 pub struct MakeVestment<'info> {
     #[account(
+        init_if_needed,
+        payer = vestor,
+        seeds = [b"vestment", vested_tokens_mint.key().as_ref(), b"ledger", beneficiary.key().as_ref()],
+        bump, 
+        space = 8 + size_of::<Ledger>()
+    )]
+    pub ledger: Account<'info, Ledger>,
+
+    #[account(
         init,
         payer = vestor,
         space = 8 + size_of::<Vestment>(),
-        seeds = [b"vestment",vested_tokens.key().as_ref()],
+        seeds = [b"vestment", ledger.key().as_ref(), &(ledger.vestment_count+1).to_le_bytes()],
         bump
     )]
     //inits acc of the right size
@@ -147,7 +166,7 @@ pub struct MakeVestment<'info> {
     #[account(
         init,
         payer = vestor,
-        seeds = [b"vested-tokens", beneficiary.key().as_ref()],
+        seeds = [b"vested-tokens", vestment.key().as_ref()],
         bump,
         token::mint = vested_tokens_mint,
         token::authority = vested_tokens,
@@ -167,8 +186,15 @@ pub struct MakeVestment<'info> {
 #[derive(Accounts)]
 pub struct ClaimVestment<'info> {
     #[account(
+        mut,
+        seeds = [b"vestment", vested_tokens_mint.key().as_ref(), b"ledger", beneficiary.key().as_ref()],
+        bump
+    )]
+    pub ledger: Account<'info, Ledger>,
+
+    #[account(
         mut, 
-        seeds = [b"vestment", vested_tokens.key().as_ref()], 
+        seeds = [b"vestment", ledger.key().as_ref(), &(ledger.vestment_count).to_le_bytes()], 
         bump
     )]
     pub vestment: Account<'info, Vestment>,
@@ -181,7 +207,7 @@ pub struct ClaimVestment<'info> {
 
     #[account(
         mut,
-        seeds = [b"vested-tokens", beneficiary.key().as_ref()],
+        seeds = [b"vested-tokens", vestment.key().as_ref()],
         bump,
     )]
     pub vested_tokens: Account<'info, TokenAccount>,
@@ -208,6 +234,14 @@ pub struct Vestment {
     pub last_claim_period: Option<i64>,
     pub vesting_end_at: i64,
     pub amount_per_period: u64,
+    pub is_active: bool
+}
+
+#[account]
+pub struct Ledger {
+    pub vestment_count: u32, 
+    pub vestment_mint: Pubkey,
+    pub vestment_beneficiary: Pubkey
 }
 
 #[error_code]

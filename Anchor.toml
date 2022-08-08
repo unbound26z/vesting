@@ -7,7 +7,7 @@ vesting = "2GxXeKFC6jL6eMj2a1dCn9XFesYp6WrGXq7HDBZtgcPZ"
 url = "https://anchor.projectserum.com"
 
 [provider]
-cluster = "devnet"
+cluster = "localnet"
 wallet = "/Users/zazza/.config/solana/id.json"
 
 [scripts]

@@ -29,118 +29,118 @@ describe("vesting", () => {
 
 	const connection = anchor.getProvider().connection;
 
-	it("#01 can make and claim a vestment (SIMPLE)", async () => {
-		// Before sending the transaction to the blockchain.
-		const vestor = anchor.web3.Keypair.generate();
-		const beneficiary = anchor.web3.Keypair.generate();
+	// it("#01 can make and claim a vestment (SIMPLE)", async () => {
+	// 	// Before sending the transaction to the blockchain.
+	// 	const vestor = anchor.web3.Keypair.generate();
+	// 	const beneficiary = anchor.web3.Keypair.generate();
 
-		const tx1 = await connection.requestAirdrop(
-			vestor.publicKey,
-			LAMPORTS_PER_SOL
-		);
-		const tx2 = await connection.requestAirdrop(
-			beneficiary.publicKey,
-			LAMPORTS_PER_SOL
-		);
+	// 	const tx1 = await connection.requestAirdrop(
+	// 		vestor.publicKey,
+	// 		LAMPORTS_PER_SOL
+	// 	);
+	// 	const tx2 = await connection.requestAirdrop(
+	// 		beneficiary.publicKey,
+	// 		LAMPORTS_PER_SOL
+	// 	);
 
-		await connection.confirmTransaction(tx1);
-		await connection.confirmTransaction(tx2);
+	// 	await connection.confirmTransaction(tx1);
+	// 	await connection.confirmTransaction(tx2);
 
-		const tokenMint = await createMint(
-			connection,
-			vestor,
-			vestor.publicKey,
-			null,
-			0
-		);
+	// 	const tokenMint = await createMint(
+	// 		connection,
+	// 		vestor,
+	// 		vestor.publicKey,
+	// 		null,
+	// 		0
+	// 	);
 
-		const vestorTokenAccount = await createAssociatedTokenAccount(
-			connection,
-			vestor,
-			tokenMint,
-			vestor.publicKey
-		);
+	// 	const vestorTokenAccount = await createAssociatedTokenAccount(
+	// 		connection,
+	// 		vestor,
+	// 		tokenMint,
+	// 		vestor.publicKey
+	// 	);
 
-		const beneficiaryTokenAccount = await createAssociatedTokenAccount(
-			connection,
-			beneficiary,
-			tokenMint,
-			beneficiary.publicKey
-		);
+	// 	const beneficiaryTokenAccount = await createAssociatedTokenAccount(
+	// 		connection,
+	// 		beneficiary,
+	// 		tokenMint,
+	// 		beneficiary.publicKey
+	// 	);
 
-		await mintTo(
-			connection,
-			vestor,
-			tokenMint,
-			vestorTokenAccount,
-			vestor,
-			1000
-		);
+	// 	await mintTo(
+	// 		connection,
+	// 		vestor,
+	// 		tokenMint,
+	// 		vestorTokenAccount,
+	// 		vestor,
+	// 		1000
+	// 	);
 
-		const [vestedTokens] = await PublicKey.findProgramAddress(
-			[Buffer.from("vested-tokens"), beneficiary.publicKey.toBuffer()],
-			program.programId
-		);
+	// 	const [vestedTokens] = await PublicKey.findProgramAddress(
+	// 		[Buffer.from("vested-tokens"), beneficiary.publicKey.toBuffer()],
+	// 		program.programId
+	// 	);
 
-		const [vestment, vestmentBump] = await PublicKey.findProgramAddress(
-			[Buffer.from("vestment"), vestedTokens.toBuffer()],
-			program.programId
-		);
+	// 	const [vestment, vestmentBump] = await PublicKey.findProgramAddress(
+	// 		[Buffer.from("vestment"), vestedTokens.toBuffer()],
+	// 		program.programId
+	// 	);
 
-		const tx3 = await program.rpc.makeVestment(
-			new anchor.BN(100),
-			null,
-			new anchor.BN(5),
-			4,
-			{
-				accounts: {
-					vestment: vestment,
-					vestor: vestor.publicKey,
-					vestorTokenAccount: vestorTokenAccount,
-					beneficiary: beneficiary.publicKey,
-					vestedTokens: vestedTokens,
-					vestedTokensMint: tokenMint,
-					tokenProgram: TOKEN_PROGRAM_ID,
-					rent: SYSVAR_RENT_PUBKEY,
-					systemProgram: anchor.web3.SystemProgram.programId,
-				},
-				signers: [vestor],
-			}
-		);
+	// 	const tx3 = await program.rpc.makeVestment(
+	// 		new anchor.BN(100),
+	// 		null,
+	// 		new anchor.BN(5),
+	// 		4,
+	// 		{
+	// 			accounts: {
+	// 				vestment: vestment,
+	// 				vestor: vestor.publicKey,
+	// 				vestorTokenAccount: vestorTokenAccount,
+	// 				beneficiary: beneficiary.publicKey,
+	// 				vestedTokens: vestedTokens,
+	// 				vestedTokensMint: tokenMint,
+	// 				tokenProgram: TOKEN_PROGRAM_ID,
+	// 				rent: SYSVAR_RENT_PUBKEY,
+	// 				systemProgram: anchor.web3.SystemProgram.programId,
+	// 			},
+	// 			signers: [vestor],
+	// 		}
+	// 	);
 
-		await connection.confirmTransaction(tx3);
-		console.log("Vestment state: ");
-		console.log(await program.account.vestment.fetch(vestment));
+	// 	await connection.confirmTransaction(tx3);
+	// 	console.log("Vestment state: ");
+	// 	console.log(await program.account.vestment.fetch(vestment));
 
-		console.log("Vestor: ");
-		console.log(await connection.getTokenAccountBalance(vestorTokenAccount));
+	// 	console.log("Vestor: ");
+	// 	console.log(await connection.getTokenAccountBalance(vestorTokenAccount));
 
-		console.log("Vestment: ");
-		console.log(await connection.getTokenAccountBalance(vestedTokens));
+	// 	console.log("Vestment: ");
+	// 	console.log(await connection.getTokenAccountBalance(vestedTokens));
 
-		await program.rpc.claimVestment({
-			accounts: {
-				vestment: vestment,
-				beneficiary: beneficiary.publicKey,
-				beneficiaryTokenAccount: beneficiaryTokenAccount,
-				vestedTokens: vestedTokens,
-				tokenProgram: TOKEN_PROGRAM_ID,
-				systemProgram: anchor.web3.SystemProgram.programId,
-			},
-			signers: [beneficiary],
-		});
+	// 	await program.rpc.claimVestment({
+	// 		accounts: {
+	// 			vestment: vestment,
+	// 			beneficiary: beneficiary.publicKey,
+	// 			beneficiaryTokenAccount: beneficiaryTokenAccount,
+	// 			vestedTokens: vestedTokens,
+	// 			tokenProgram: TOKEN_PROGRAM_ID,
+	// 			systemProgram: anchor.web3.SystemProgram.programId,
+	// 		},
+	// 		signers: [beneficiary],
+	// 	});
 
-		console.log("Vestment state: ");
-		console.log(await program.account.vestment.fetch(vestment));
+	// 	console.log("Vestment state: ");
+	// 	console.log(await program.account.vestment.fetch(vestment));
 
-		console.log("Beneficiary: ");
-		console.log(
-			await connection.getTokenAccountBalance(beneficiaryTokenAccount)
-		);
+	// 	console.log("Beneficiary: ");
+	// 	console.log(
+	// 		await connection.getTokenAccountBalance(beneficiaryTokenAccount)
+	// 	);
 
-		console.log("Vestment: ");
-		console.log(await connection.getTokenAccountBalance(vestedTokens));
-	});
+	// 	console.log("Vestment: ");
+	// 	console.log(await connection.getTokenAccountBalance(vestedTokens));
+	// });
 
 	it("#02 can make and claim a vestment (COMPLEX)", async () => {
 		const vestor = anchor.web3.Keypair.generate();
@@ -189,13 +189,44 @@ describe("vesting", () => {
 			1000
 		);
 
-		const [vestedTokens] = await PublicKey.findProgramAddress(
-			[Buffer.from("vested-tokens"), beneficiary.publicKey.toBuffer()],
+		const [ledger] = await PublicKey.findProgramAddress(
+			[
+				Buffer.from("ledger"),
+				tokenMint.toBuffer(),
+				beneficiary.publicKey.toBuffer(),
+			],
+			program.programId
+		);
+		console.log(ledger);
+
+		// const ledgercina = await program.account.ledger.fetch(ledger.toString());
+		// console.log(ledgercina);
+
+		var x = 0;
+		const [oldVestment] = await PublicKey.findProgramAddress(
+			[Buffer.from("vestment"), ledger.toBuffer(), Buffer.from("0")],
+			program.programId
+		);
+		console.log(oldVestment);
+
+		//const oldVestmentcina = await program.account.vestment.fetch(oldVestment);
+
+		//console.log(oldVestmentcina);
+
+		// if (oldVestmentcina.isActive == true || oldVestmentcina == null) {
+		// 	console.log("A vestment is already active");
+		// 	return;
+		// }
+
+		const [newVestment] = await PublicKey.findProgramAddress(
+			[Buffer.from("vestment"), ledger.toBuffer(), Buffer.from("1")],
 			program.programId
 		);
 
-		const [vestment, vestmentBump] = await PublicKey.findProgramAddress(
-			[Buffer.from("vestment"), vestedTokens.toBuffer()],
+		console.log(newVestment);
+
+		const [vestedTokens] = await PublicKey.findProgramAddress(
+			[Buffer.from("vested-tokens"), newVestment.toBuffer()],
 			program.programId
 		);
 
@@ -211,7 +242,8 @@ describe("vesting", () => {
 			numberOfPeriods,
 			{
 				accounts: {
-					vestment: vestment,
+					ledger: ledger,
+					vestment: newVestment,
 					vestor: vestor.publicKey,
 					vestorTokenAccount: vestorTokenAccount,
 					beneficiary: beneficiary.publicKey,
@@ -227,8 +259,11 @@ describe("vesting", () => {
 
 		await connection.confirmTransaction(tx3);
 
+		console.log("Ledger state: ");
+		console.log(await program.account.ledger.fetch(ledger));
+
 		console.log("Vestment state: ");
-		console.log(await program.account.vestment.fetch(vestment));
+		console.log(await program.account.vestment.fetch(newVestment));
 
 		console.log("Vestor: ");
 		console.log(await connection.getTokenAccountBalance(vestorTokenAccount));
@@ -247,18 +282,23 @@ describe("vesting", () => {
 
 		await program.rpc.claimVestment({
 			accounts: {
-				vestment: vestment,
+				ledger: ledger,
+				vestment: newVestment,
 				beneficiary: beneficiary.publicKey,
 				beneficiaryTokenAccount: beneficiaryTokenAccount,
 				vestedTokens: vestedTokens,
+				vestedTokensMint: tokenMint,
 				tokenProgram: TOKEN_PROGRAM_ID,
 				systemProgram: anchor.web3.SystemProgram.programId,
 			},
 			signers: [beneficiary],
 		});
 
+		console.log("Ledger state: ");
+		console.log(await program.account.ledger.fetch(ledger));
+
 		console.log("Vestment state: ");
-		console.log(await program.account.vestment.fetch(vestment));
+		console.log(await program.account.vestment.fetch(newVestment));
 
 		console.log("Beneficiary: ");
 		console.log(
@@ -272,10 +312,12 @@ describe("vesting", () => {
 
 		await program.rpc.claimVestment({
 			accounts: {
-				vestment: vestment,
+				ledger: ledger,
+				vestment: newVestment,
 				beneficiary: beneficiary.publicKey,
 				beneficiaryTokenAccount: beneficiaryTokenAccount,
 				vestedTokens: vestedTokens,
+				vestedTokensMint: tokenMint,
 				tokenProgram: TOKEN_PROGRAM_ID,
 				systemProgram: anchor.web3.SystemProgram.programId,
 			},
@@ -283,7 +325,7 @@ describe("vesting", () => {
 		});
 
 		console.log("Vestment state: ");
-		console.log(await program.account.vestment.fetch(vestment));
+		console.log(await program.account.vestment.fetch(newVestment));
 
 		console.log("Beneficiary: ");
 		console.log(

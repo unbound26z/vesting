@@ -1,4 +1,4 @@
-use anchor_lang::prelude::*;
+use anchor_lang::prelude::{*};
 use anchor_lang::solana_program::system_program; //add bcs of constraint for sys_prog::ID
 use anchor_spl::token::{self, Mint, Token, TokenAccount};
 use std::mem::size_of;
@@ -124,7 +124,7 @@ pub mod vesting {
 
         vestment.amount_claimed = vestment.amount_claimed.checked_add(*amount_to_claim).unwrap();
 
-        if vestment.amount_vested-vestment.amount_claimed=0 {
+        if vestment.amount_vested-vestment.amount_claimed==0 {
             vestment.is_active=false;
         }
        
@@ -137,7 +137,7 @@ pub struct MakeVestment<'info> {
     #[account(
         init_if_needed,
         payer = vestor,
-        seeds = [b"vestment", vested_tokens_mint.key().as_ref(), b"ledger", beneficiary.key().as_ref()],
+        seeds = [b"ledger", vested_tokens_mint.key().as_ref(), beneficiary.key().as_ref()],
         bump, 
         space = 8 + size_of::<Ledger>()
     )]
@@ -187,7 +187,7 @@ pub struct MakeVestment<'info> {
 pub struct ClaimVestment<'info> {
     #[account(
         mut,
-        seeds = [b"vestment", vested_tokens_mint.key().as_ref(), b"ledger", beneficiary.key().as_ref()],
+        seeds = [b"ledger", vested_tokens_mint.key().as_ref(),  beneficiary.key().as_ref()],
         bump
     )]
     pub ledger: Account<'info, Ledger>,
@@ -211,7 +211,7 @@ pub struct ClaimVestment<'info> {
         bump,
     )]
     pub vested_tokens: Account<'info, TokenAccount>,
-    // pub vested_tokens_mint: Account<'info, Mint>, // mint
+    pub vested_tokens_mint: Account<'info, Mint>, // mint
     pub token_program: Program<'info, Token>,
 
     ///CHECK
@@ -238,6 +238,7 @@ pub struct Vestment {
 }
 
 #[account]
+#[derive(Default)]
 pub struct Ledger {
     pub vestment_count: u32, 
     pub vestment_mint: Pubkey,

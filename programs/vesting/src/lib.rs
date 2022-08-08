@@ -46,8 +46,8 @@ pub mod vesting {
         vestment.amount_per_period = vestment.amount_vested.checked_div(vestment.num_of_periods as u64).unwrap();
 
         if let Some(c) = cliff {
-            vestment.cliff_end_at = Some(c);
-            vestment.vesting_end_at = c
+            vestment.cliff_end_at = vestment.vesting_start_at.checked_add(c);
+            vestment.vesting_end_at = vestment.cliff_end_at.unwrap()
                 .checked_add((num_of_periods as i64).checked_mul(period).unwrap())
                 .unwrap();
         } else {
@@ -83,7 +83,7 @@ pub mod vesting {
         let mut num_of_claim_periods = Box::new(0);
         if let Some(last_claim_period) = vestment.last_claim_period {
             *num_of_claim_periods = claim_time.checked_sub(last_claim_period).unwrap().checked_div(vestment.period_length).unwrap();
-            vestment.last_claim_period = num_of_claim_periods.checked_mul(vestment.period_length).unwrap().checked_add(last_claim_period);
+            vestment.last_claim_period = (num_of_claim_periods.checked_mul(vestment.period_length).unwrap()).checked_add(last_claim_period);
         } else {
             if let Some(c) = vestment.cliff_end_at {
                 *num_of_claim_periods = claim_time.checked_sub(c).unwrap().checked_div(vestment.period_length).unwrap();
@@ -91,7 +91,7 @@ pub mod vesting {
 
             } else {
                 *num_of_claim_periods = (claim_time.checked_sub(vestment.vesting_start_at).unwrap()).checked_div(vestment.period_length).unwrap();
-                vestment.last_claim_period = num_of_claim_periods.checked_mul(vestment.period_length).unwrap().checked_add(vestment.vesting_start_at);
+                vestment.last_claim_period = (num_of_claim_periods.checked_mul(vestment.period_length).unwrap()).checked_add(vestment.vesting_start_at);
             }
         }
         *amount_to_claim = (*num_of_claim_periods as u64).checked_mul(vestment.amount_per_period).unwrap();

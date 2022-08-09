@@ -189,6 +189,8 @@ describe("vesting", () => {
 			1000
 		);
 
+		console.log(beneficiary.publicKey);
+
 		const [ledger] = await PublicKey.findProgramAddress(
 			[
 				Buffer.from("ledger"),
@@ -198,30 +200,71 @@ describe("vesting", () => {
 			program.programId
 		);
 		console.log(ledger);
+		let ledgercina;
+		try {
+			ledgercina = await program.account.ledger.fetch(ledger.toString());
+			console.log(ledgercina);
+		} catch (error) {
+			const tx0 = await program.rpc.makeLedger({
+				accounts: {
+					ledger: ledger,
+					vestor: vestor.publicKey,
+					vestorTokenAccount: vestorTokenAccount,
+					beneficiary: beneficiary.publicKey,
+					vestedTokensMint: tokenMint,
+					tokenProgram: TOKEN_PROGRAM_ID,
+					rent: SYSVAR_RENT_PUBKEY,
+					systemProgram: anchor.web3.SystemProgram.programId,
+				},
+				signers: [vestor],
+			});
+			await connection.confirmTransaction(tx0);
+			ledgercina = await program.account.ledger.fetch(ledger.toString());
+			console.log(ledgercina);
+		}
+		let ledgerVCount = ledgercina.vestmentCount;
+		console.log(ledgerVCount);
 
-		// const ledgercina = await program.account.ledger.fetch(ledger.toString());
-		// console.log(ledgercina);
-
-		var x = 0;
 		const [oldVestment] = await PublicKey.findProgramAddress(
-			[Buffer.from("vestment"), ledger.toBuffer(), Buffer.from("0")],
+			[
+				Buffer.from("vestment"),
+				ledger.toBuffer(),
+				new anchor.BN(ledgerVCount).toBuffer("le", 8),
+			],
 			program.programId
 		);
 		console.log(oldVestment);
 
-		//const oldVestmentcina = await program.account.vestment.fetch(oldVestment);
+		let oldVestmentcina;
+		let newVestment = oldVestment;
+		try {
+			oldVestmentcina = await program.account.vestment.fetch(oldVestment);
+			console.log(oldVestmentcina);
 
-		//console.log(oldVestmentcina);
-
-		// if (oldVestmentcina.isActive == true || oldVestmentcina == null) {
-		// 	console.log("A vestment is already active");
-		// 	return;
-		// }
-
-		const [newVestment] = await PublicKey.findProgramAddress(
-			[Buffer.from("vestment"), ledger.toBuffer(), Buffer.from("1")],
-			program.programId
-		);
+			if (oldVestmentcina.isActive == true) {
+				console.log("A vestment is already active");
+				return;
+			}
+			ledgerVCount++;
+			[newVestment] = await PublicKey.findProgramAddress(
+				[
+					Buffer.from("vestment"),
+					ledger.toBuffer(),
+					new anchor.BN(ledgerVCount).toBuffer("le", 8),
+				],
+				program.programId
+			);
+		} catch (error) {
+			[newVestment] = await PublicKey.findProgramAddress(
+				[
+					Buffer.from("vestment"),
+					ledger.toBuffer(),
+					new anchor.BN(1).toBuffer("le", 8),
+				],
+				program.programId
+			);
+		}
+		console.log("New vestment:");
 
 		console.log(newVestment);
 
@@ -235,6 +278,7 @@ describe("vesting", () => {
 		var period = 5;
 		var amount = 10;
 		//var vestmentTimeinSeconds = Math.floor(Date.now() / 1000);
+		console.log("Sve ok do sad");
 		const tx3 = await program.rpc.makeVestment(
 			new anchor.BN(amount),
 			null,
@@ -256,6 +300,7 @@ describe("vesting", () => {
 				signers: [vestor],
 			}
 		);
+		console.log("MNOGO OK.");
 
 		await connection.confirmTransaction(tx3);
 

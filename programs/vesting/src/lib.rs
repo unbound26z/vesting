@@ -19,10 +19,8 @@ pub mod vesting {
         let vestor: &Signer = &ctx.accounts.vestor;
         let vesting_start_at = Clock::get().unwrap().unix_timestamp;
         let ledger = &mut ctx.accounts.ledger;
-
-        ledger.vestment_beneficiary = ctx.accounts.beneficiary.key();
-        ledger.vestment_mint = ctx.accounts.vested_tokens_mint.key();
         ledger.vestment_count= ledger.vestment_count.checked_add(1).unwrap();
+
 
         if amount <=0 { 
             return Err(ErrorCode::InvalidAmount.into());
@@ -74,6 +72,19 @@ pub mod vesting {
             ),
             amount*1000000000 as u64,
         )?;
+
+        Ok(())
+    }
+
+    pub fn make_ledger(
+        ctx: Context<MakeLedger>
+    ) -> Result<()> {
+        let ledger = &mut ctx.accounts.ledger;
+
+        ledger.vestment_beneficiary = ctx.accounts.beneficiary.key();
+        ledger.vestment_mint = ctx.accounts.vested_tokens_mint.key();
+        ledger.vestment_count= 0;
+
 
         Ok(())
     }
@@ -135,11 +146,9 @@ pub mod vesting {
 #[derive(Accounts)]
 pub struct MakeVestment<'info> {
     #[account(
-        init_if_needed,
-        payer = vestor,
+        mut,
         seeds = [b"ledger", vested_tokens_mint.key().as_ref(), beneficiary.key().as_ref()],
-        bump, 
-        space = 8 + size_of::<Ledger>()
+        bump
     )]
     pub ledger: Account<'info, Ledger>,
 
@@ -147,13 +156,12 @@ pub struct MakeVestment<'info> {
         init,
         payer = vestor,
         space = 8 + size_of::<Vestment>(),
-        seeds = [b"vestment", ledger.key().as_ref(), &(ledger.vestment_count+1).to_le_bytes()],
+        seeds = [b"vestment", ledger.key().as_ref(), &((ledger.vestment_count + 1) as u64).to_le_bytes()],
         bump
     )]
-    //inits acc of the right size
     pub vestment: Account<'info, Vestment>, //parses from bits to vestment struct
 
-    #[account(mut)] //mut to make the amount he has LESS
+    #[account(mut)] 
     pub vestor: Signer<'info>, //=AccountInfo but has to sign it too
 
     #[account(mut)]
@@ -172,6 +180,38 @@ pub struct MakeVestment<'info> {
         token::authority = vested_tokens,
     )]
     pub vested_tokens: Account<'info, TokenAccount>,
+    pub vested_tokens_mint: Account<'info, Mint>, // mint
+
+    pub token_program: Program<'info, Token>,
+    pub rent: Sysvar<'info, Rent>,
+
+    ///CHECK: Validated here.
+    #[account(address=system_program::ID)] //so its valid
+    pub system_program: AccountInfo<'info>, //accountInfo gives an accounts in BITS
+}
+
+#[derive(Accounts)]
+pub struct MakeLedger<'info> {
+    #[account(
+        init_if_needed,
+        payer = vestor,
+        seeds = [b"ledger", vested_tokens_mint.key().as_ref(), beneficiary.key().as_ref()],
+        bump, 
+        space = 8 + size_of::<Ledger>()
+    )]
+    pub ledger: Account<'info, Ledger>,
+
+
+    #[account(mut)]
+    pub vestor: Signer<'info>, //=AccountInfo but has to sign it too
+
+    #[account(mut)]
+    pub vestor_token_account: Account<'info, TokenAccount>,
+
+    #[account()]
+    /// CHECK: TODO
+    pub beneficiary: AccountInfo<'info>,
+
     pub vested_tokens_mint: Account<'info, Mint>, // mint
 
     pub token_program: Program<'info, Token>,

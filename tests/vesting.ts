@@ -180,7 +180,7 @@ describe("vesting", () => {
 			beneficiary.publicKey
 		);
 
-		await mintTo(
+		const txMint = await mintTo(
 			connection,
 			vestor,
 			tokenMint,
@@ -188,8 +188,24 @@ describe("vesting", () => {
 			vestor,
 			1000
 		);
+		const txMint2 = await mintTo(
+			connection,
+			beneficiary,
+			tokenMint,
+			beneficiaryTokenAccount,
+			vestor,
+			1000
+		);
 
+		await connection.confirmTransaction(txMint);
+		await connection.confirmTransaction(txMint2);
+
+		console.log("Beneficiary pubkey:\n");
 		console.log(beneficiary.publicKey);
+		console.log("\n");
+		console.log("Vestor SPL balance:\n");
+		console.log(await connection.getTokenAccountBalance(vestorTokenAccount));
+		console.log("\n");
 
 		const [ledger] = await PublicKey.findProgramAddress(
 			[
@@ -199,11 +215,16 @@ describe("vesting", () => {
 			],
 			program.programId
 		);
+		console.log("Ledger pubkey:\n");
 		console.log(ledger);
+		console.log("\n");
+
 		let ledgercina;
 		try {
 			ledgercina = await program.account.ledger.fetch(ledger.toString());
+			console.log("Ledgercina pubkey:\n");
 			console.log(ledgercina);
+			console.log("\n");
 		} catch (error) {
 			const tx0 = await program.rpc.makeLedger({
 				accounts: {
@@ -220,26 +241,34 @@ describe("vesting", () => {
 			});
 			await connection.confirmTransaction(tx0);
 			ledgercina = await program.account.ledger.fetch(ledger.toString());
+			console.log("Ledgercina pubkey:\n");
 			console.log(ledgercina);
+			console.log("\n");
 		}
 		let ledgerVCount = ledgercina.vestmentCount;
+		console.log("Ledger vestment count: \n");
 		console.log(ledgerVCount);
+		console.log("\n");
 
 		const [oldVestment] = await PublicKey.findProgramAddress(
 			[
 				Buffer.from("vestment"),
 				ledger.toBuffer(),
-				new anchor.BN(ledgerVCount).toBuffer("le", 8),
+				new anchor.BN(ledgerVCount).toArrayLike(Buffer), //new anchor.BN(ledgerVCount).toBuffer("le", 8)
 			],
 			program.programId
 		);
+		console.log("Old vestment pubkey:\n");
 		console.log(oldVestment);
+		console.log("\n");
 
 		let oldVestmentcina;
 		let newVestment = oldVestment;
 		try {
 			oldVestmentcina = await program.account.vestment.fetch(oldVestment);
+			console.log("Old vestmentcina pubkey:\n");
 			console.log(oldVestmentcina);
+			console.log("\n");
 
 			if (oldVestmentcina.isActive == true) {
 				console.log("A vestment is already active");
@@ -250,7 +279,7 @@ describe("vesting", () => {
 				[
 					Buffer.from("vestment"),
 					ledger.toBuffer(),
-					new anchor.BN(ledgerVCount).toBuffer("le", 8),
+					new anchor.BN(ledgerVCount).toArrayLike(Buffer),
 				],
 				program.programId
 			);
@@ -259,26 +288,28 @@ describe("vesting", () => {
 				[
 					Buffer.from("vestment"),
 					ledger.toBuffer(),
-					new anchor.BN(1).toBuffer("le", 8),
+					new anchor.BN(1).toArrayLike(Buffer),
 				],
 				program.programId
 			);
 		}
-		console.log("New vestment:");
-
+		console.log("New vestment pubkey:");
 		console.log(newVestment);
+		console.log("\n");
 
 		const [vestedTokens] = await PublicKey.findProgramAddress(
 			[Buffer.from("vested-tokens"), newVestment.toBuffer()],
 			program.programId
 		);
 
+		console.log("Vestment token account pubkey:\n");
+		console.log(vestedTokens);
+		console.log("\n");
+
 		var cliff = 10;
 		var numberOfPeriods = 4;
 		var period = 5;
-		var amount = 10;
-		//var vestmentTimeinSeconds = Math.floor(Date.now() / 1000);
-		console.log("Sve ok do sad");
+		var amount = 100;
 		const tx3 = await program.rpc.makeVestment(
 			new anchor.BN(amount),
 			null,
@@ -300,7 +331,6 @@ describe("vesting", () => {
 				signers: [vestor],
 			}
 		);
-		console.log("MNOGO OK.");
 
 		await connection.confirmTransaction(tx3);
 
@@ -313,7 +343,7 @@ describe("vesting", () => {
 		console.log("Vestor: ");
 		console.log(await connection.getTokenAccountBalance(vestorTokenAccount));
 
-		console.log("Vestment: ");
+		console.log("Vestment tokens: ");
 		console.log(await connection.getTokenAccountBalance(vestedTokens));
 
 		function sleep(milliseconds) {
@@ -325,7 +355,9 @@ describe("vesting", () => {
 		}
 		sleep(5000);
 
-		await program.rpc.claimVestment({
+		console.log("Ok pre claima");
+
+		const txClaim1 = await program.rpc.claimVestment({
 			accounts: {
 				ledger: ledger,
 				vestment: newVestment,
@@ -338,6 +370,8 @@ describe("vesting", () => {
 			},
 			signers: [beneficiary],
 		});
+
+		await connection.confirmTransaction(txClaim1);
 
 		console.log("Ledger state: ");
 		console.log(await program.account.ledger.fetch(ledger));
@@ -368,6 +402,9 @@ describe("vesting", () => {
 			},
 			signers: [beneficiary],
 		});
+
+		console.log("Ledger state: ");
+		console.log(await program.account.ledger.fetch(ledger));
 
 		console.log("Vestment state: ");
 		console.log(await program.account.vestment.fetch(newVestment));

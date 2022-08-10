@@ -40,7 +40,7 @@ pub mod vesting {
 
         vestment.vestor = vestor.key();
         vestment.vesting_start_at = vesting_start_at;
-        vestment.amount_vested = amount*1000000000;
+        vestment.amount_vested = amount; // *1000000000
         vestment.amount_claimed = 0;
         vestment.period_length = period;
         vestment.num_of_periods = num_of_periods;
@@ -70,7 +70,7 @@ pub mod vesting {
                     authority: ctx.accounts.vestor.to_account_info(),
                 },
             ),
-            amount*1000000000 as u64,
+            amount as u64,
         )?;
 
         Ok(())
@@ -111,6 +111,7 @@ pub mod vesting {
                 vestment.last_claim_period = (num_of_claim_periods.checked_mul(vestment.period_length).unwrap()).checked_add(vestment.vesting_start_at);
             }
         }
+        
         *amount_to_claim = (*num_of_claim_periods as u64).checked_mul(vestment.amount_per_period).unwrap();
     } else  {
         *amount_to_claim = vestment.amount_vested.checked_sub(vestment.amount_claimed).unwrap();
@@ -126,8 +127,8 @@ pub mod vesting {
                 },
                 &[&[
                     b"vested-tokens",
-                    ctx.accounts.beneficiary.key().as_ref(),
-                    &[*ctx.bumps.get("vested_tokens").unwrap()],
+                    vestment.key().as_ref(), //probably the problem
+                    &[*ctx.bumps.get("vested-tokens").unwrap()],
                 ]],
             ),
             *amount_to_claim,
@@ -156,7 +157,7 @@ pub struct MakeVestment<'info> {
         init,
         payer = vestor,
         space = 8 + size_of::<Vestment>(),
-        seeds = [b"vestment", ledger.key().as_ref(), &((ledger.vestment_count + 1) as u64).to_le_bytes()],
+        seeds = [b"vestment", ledger.key().as_ref(), &[(ledger.vestment_count + 1) as u8]], //&((ledger.vestment_count + 1) as u64).to_le_bytes()]
         bump
     )]
     pub vestment: Account<'info, Vestment>, //parses from bits to vestment struct
@@ -234,7 +235,7 @@ pub struct ClaimVestment<'info> {
 
     #[account(
         mut, 
-        seeds = [b"vestment", ledger.key().as_ref(), &(ledger.vestment_count).to_le_bytes()], 
+        seeds = [b"vestment", ledger.key().as_ref(), &[ledger.vestment_count as u8]], 
         bump
     )]
     pub vestment: Account<'info, Vestment>,

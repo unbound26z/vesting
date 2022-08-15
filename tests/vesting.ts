@@ -356,9 +356,23 @@ describe("vesting", () => {
 		sleep(5000);
 
 		console.log("Ok pre claima");
+		// const txClaim1 = await program.rpc.claimVestment({
+		// 	accounts: {
+		// 		ledger: ledger,
+		// 		vestment: newVestment,
+		// 		beneficiary: beneficiary.publicKey,
+		// 		beneficiaryTokenAccount: beneficiaryTokenAccount,
+		// 		vestedTokens: vestedTokens,
+		// 		vestedTokensMint: tokenMint,
+		// 		tokenProgram: TOKEN_PROGRAM_ID,
+		// 		systemProgram: anchor.web3.SystemProgram.programId,
+		// 	},
+		// 	signers: [beneficiary],
+		// });
 
-		const txClaim1 = await program.rpc.claimVestment({
-			accounts: {
+		const txClaim1 = await program.methods
+			.claimVestment()
+			.accounts({
 				ledger: ledger,
 				vestment: newVestment,
 				beneficiary: beneficiary.publicKey,
@@ -367,9 +381,9 @@ describe("vesting", () => {
 				vestedTokensMint: tokenMint,
 				tokenProgram: TOKEN_PROGRAM_ID,
 				systemProgram: anchor.web3.SystemProgram.programId,
-			},
-			signers: [beneficiary],
-		});
+			})
+			.signers([beneficiary])
+			.rpc();
 
 		await connection.confirmTransaction(txClaim1);
 

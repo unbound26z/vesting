@@ -72,6 +72,7 @@ pub mod vesting {
             ),
             amount as u64,
         )?;
+        msg!("Rust: Finished make vestment");
 
         Ok(())
     }
@@ -90,6 +91,7 @@ pub mod vesting {
     }
 
     pub fn claim_vestment(ctx: Context<ClaimVestment>) -> Result<()> {
+        msg!("Rust: Entered claim vestment");
         let vestment = &mut ctx.accounts.vestment;
         let claim_time = Clock::get().unwrap().unix_timestamp;
         let mut amount_to_claim: Box<u64> = Box::new(0);
